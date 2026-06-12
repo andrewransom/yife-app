@@ -809,25 +809,54 @@ Rules:
 
 ## Media
 
-Use a metadata table plus direct primary image columns where needed.
+Use Supabase Storage files plus Postgres metadata. Detailed image storage, variant, upload, and serving rules live in `docs/dev/specs/yife-media-image-storage-spec.md`.
+
+Store bucket/path metadata, not public URLs. App code derives public URLs from bucket/path when rendering public MVP images.
 
 ```text
 media_assets
 - id
 - campaign_id nullable
+- owner_user_id nullable
+- asset_scope -- campaign | user_profile
 - storage_bucket
-- storage_path
-- thumbnail_storage_path nullable
-- public_url nullable
-- thumbnail_public_url nullable
+- status
+- current_version_key
+- title nullable
 - alt_text nullable
-- mime_type nullable
-- width nullable
-- height nullable
+- is_decorative
+- crop_anchor
+- dominant_color nullable
+- blurhash nullable
+- original_filename nullable
+- original_mime_type nullable
+- original_byte_size nullable
+- original_width nullable
+- original_height nullable
+- retain_original
 - created_by
 - updated_by
 - created_at
 - updated_at
+- deleted_at nullable
+```
+
+Generated files are represented as variants.
+
+```text
+media_asset_variants
+- id
+- media_asset_id fk -> media_assets.id
+- variant -- thumb_160 | grid_480 | original_1600
+- storage_bucket
+- storage_path
+- width
+- height
+- format
+- mime_type
+- byte_size
+- version_key
+- created_at
 ```
 
 Primary image columns are allowed on records that need fast list display:
@@ -836,6 +865,7 @@ Primary image columns are allowed on records that need fast list display:
 - characters
 - npcs
 - locations
+- user_profiles, if avatar uploads are implemented
 
 Optional/future attachments use generic links:
 
@@ -851,6 +881,15 @@ media_asset_links
 - created_by
 - created_at
 ```
+
+Rules:
+
+- `thumb_160` and `grid_480` are required MVP variants for ready primary-image assets.
+- Campaign, character, NPC, and location primary images must reference same-campaign media assets.
+- User profile avatar assets, if implemented, use `asset_scope = user_profile`, `campaign_id = null`, and `owner_user_id` matching the profile user.
+- MVP primary images are player-visible when the parent campaign/entity is visible.
+- GM-private or spoiler images for otherwise player-visible records are deferred until media links support visibility or private media is promoted.
+- Public URLs must not be stored in media tables or summary views.
 
 ## Funds And Resources
 
@@ -979,7 +1018,7 @@ Rules:
 
 The command palette and quick open can search client-side over loaded campaign summaries.
 
-Create a lightweight summary view first. Wrap it in RPC later only if role-aware filtering becomes awkward.
+Create a lightweight role-safe summary view first. If view-only RLS becomes too awkward, wrap the summary read in an RPC, but the first implementation must already enforce membership, role, visibility, soft-delete, and media-safe filtering.
 
 ```text
 campaign_entity_summaries
@@ -991,7 +1030,16 @@ campaign_entity_summaries
 - status_key nullable
 - status_label nullable
 - primary_image_asset_id nullable
-- primary_image_url nullable
+- primary_image_alt_text nullable
+- primary_image_thumb_bucket nullable
+- primary_image_thumb_path nullable
+- primary_image_thumb_width nullable
+- primary_image_thumb_height nullable
+- primary_image_grid_bucket nullable
+- primary_image_grid_path nullable
+- primary_image_grid_width nullable
+- primary_image_grid_height nullable
+- primary_image_is_decorative nullable
 - relevant_date nullable
 - sort_key nullable
 - parent_entity_id nullable

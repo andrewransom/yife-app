@@ -119,6 +119,11 @@ Direct table/view calls are acceptable only for simple reads or simple single-ro
 - CI is deferred; run local checks before considering work done.
 - If tests cannot be run, state that clearly.
 
+## Local Dev Servers
+
+- The normal project dev server runs on port `3055` via `pnpm dev`.
+- Agents running temporary dev servers for testing or validation should use port `3056` via `pnpm dev:agent`.
+
 ## Repo Rules
 
 - Keep a single repo and single Nuxt app initially.

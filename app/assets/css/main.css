@@ -1,0 +1,79 @@
+@import 'tailwindcss';
+@import '@nuxt/ui';
+
+@theme {
+  --font-sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'SFMono-Regular', 'SF Mono', Consolas, 'Liberation Mono', ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: light;
+  --yife-canvas: #f7f8f6;
+  --yife-surface: #ffffff;
+  --yife-surface-muted: #eef1ee;
+  --yife-border: #d9ded7;
+  --yife-text: #18201c;
+  --yife-text-muted: #5f6b63;
+  --yife-primary: #2f6f5e;
+  --yife-primary-text: #ffffff;
+  --yife-secondary: #4d5f91;
+  --yife-accent: #8b5e34;
+  --yife-success: #287a4b;
+  --yife-info: #2f6f8f;
+  --yife-warning: #a06715;
+  --yife-error: #b83f3f;
+  --yife-focus: #2563eb;
+}
+
+.dark {
+  color-scheme: dark;
+  --yife-canvas: #101312;
+  --yife-surface: #181d1b;
+  --yife-surface-muted: #202724;
+  --yife-border: #344039;
+  --yife-text: #edf2ee;
+  --yife-text-muted: #a8b3ac;
+  --yife-primary: #72b6a2;
+  --yife-primary-text: #0d1713;
+  --yife-secondary: #9ca9d8;
+  --yife-accent: #d0a06b;
+  --yife-success: #7cc995;
+  --yife-info: #82bdd3;
+  --yife-warning: #e0ad5f;
+  --yife-error: #e78181;
+  --yife-focus: #93c5fd;
+}
+
+html {
+  background: var(--yife-canvas);
+  color: var(--yife-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--yife-canvas);
+  color: var(--yife-text);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--yife-focus);
+  outline-offset: 2px;
+}
+
+.yife-app {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.66), transparent 18rem), var(--yife-canvas);
+}

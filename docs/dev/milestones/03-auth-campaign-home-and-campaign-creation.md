@@ -50,7 +50,13 @@ A user should be able to reach the public landing page, sign up or sign in with 
 - Local development uses Supabase local Auth first.
 - A single remote Supabase MVP project will be configured later unless Andrew explicitly wants remote setup now.
 - Supabase Auth email/password and magic link are both allowed by the stack decision.
+- Milestone 03 implements email/password auth UI and `/auth/callback`; visible magic-link sign-in UI is deferred until the email/password vertical slice is stable.
 - This is a partial campaign-creation slice. Create-time image upload and create-time member invitations remain tracked follow-up work for the media and invitation milestones.
+- Successful campaign creation navigates directly to the new campaign workspace shell.
+- Campaign creation omits image upload UI until the media milestone.
+- Local Auth keeps email confirmation disabled for the fast vertical-slice loop; callback success/error behavior is still verified manually.
+- The mandatory vertical-slice proof uses an automated seeded local Auth user for the happy path plus manual callback edge-case verification.
+- New user display names default from the email prefix through `ensure_user_defaults`; users can edit display names later.
 
 ## User-Facing Scope
 
@@ -94,7 +100,7 @@ A user should be able to reach the public landing page, sign up or sign in with 
   - `/auth/callback` route in the Nuxt app
   - local Supabase `site_url`
   - local allowed redirect URLs for sign-in, sign-up, and magic-link flows
-  - documented email-confirmation behavior for local development
+  - documented local email-confirmation behavior; confirmation stays disabled during milestone 03 unless explicitly revisited
 
 ### 2. Add Auth Composables
 
@@ -113,6 +119,9 @@ Rules:
 - Components consume composables, not Supabase directly.
 - Profile/settings creation must call an idempotent `ensure_user_defaults` RPC.
 - If milestone 02 did not provide that RPC, milestone 03 must add the migration, regenerate types, and test it before building the UI flow.
+- Own profile/settings initialization in one app bootstrap path, such as a protected-layout composable or protected route middleware helper.
+- Protected app content must wait for session hydration and user-default initialization before rendering campaign data.
+- If `ensure_user_defaults` fails, show a contextual retryable error and do not continue into campaign queries with partially initialized user state.
 - Auth errors should flow through the Yife notification wrapper.
 
 ### 3. Add Route Middleware
@@ -122,6 +131,8 @@ Rules:
 - Wait for Supabase session hydration before deciding redirects.
 - Redirect unauthenticated users to sign in.
 - Preserve intended destination with a `redirectTo` parameter for protected routes.
+- Accept only app-relative `redirectTo` values.
+- Drop external, protocol-relative, malformed, or cross-origin redirect targets before navigation.
 - Redirect signed-in users away from auth pages when appropriate.
 - Treat middleware as UX only. Do not describe it as a security boundary.
 
@@ -138,7 +149,8 @@ Rules:
 - Add sign-in form.
 - Add sign-up form.
 - Support email/password.
-- Support magic-link sign-in only after the callback route and local redirect configuration are verified.
+- Add `/auth/callback` support now.
+- Defer visible magic-link sign-in UI until after the email/password login/create-campaign/open-workspace loop is stable.
 - Add clear loading, error, and success states.
 - Validate forms with Zod and VeeValidate.
 - Use dense Yife form wrappers from milestone 01.
@@ -150,7 +162,7 @@ Rules:
   - `user_settings` row exists.
 - Use the idempotent `ensure_user_defaults` RPC.
 - Profile defaults should be minimal:
-  - display name from email prefix or empty editable value
+  - display name from email prefix
   - theme preference default
   - default landing behavior default
 - Do not store campaign layout state in user settings.
@@ -176,6 +188,10 @@ Rules:
 - Pinia role/view values are UI preferences only and must never authorize GM content or permission-sensitive controls.
 - `useMyCampaignsQuery` must use the safe campaign-list view/RPC from milestone 02.
 - `useCampaignMembershipSummaryQuery` must use the safe membership/role summary view/RPC from milestone 02.
+- `useCampaignByIdQuery` must not introduce a new unsafe table read.
+- For milestone 03, implement `useCampaignByIdQuery` as a filtered projection from `useMyCampaignsQuery` unless the current DB already exposes a dedicated safe campaign-by-id RPC/view.
+- If a dedicated campaign-by-id read surface is added, it must use the same membership, status, role, and media safety rules as the campaign-list surface.
+- `useCampaignStatusOptionsQuery` may read system campaign statuses directly only if RLS/grants already allow safe reads of active `status_definitions` rows; otherwise add a small safe RPC/view.
 - Do not build ad hoc joins in components or services for role-bearing campaign summaries.
 - Mutations invalidate or update relevant campaign query caches.
 - Query keys should be stable and future-realtime-friendly.
@@ -206,13 +222,13 @@ Rules:
 - Optional fields:
   - description
   - end date
-- Show image upload as unavailable/deferred, or omit it with an explicit product TODO in implementation notes.
+- Omit image upload from the creation form until the media milestone.
 - Do not implement invite-member inputs in this form yet; track it as invitation milestone work.
 - Submit through `create_campaign` RPC mutation.
 - On success:
   - invalidate campaign list query
   - set active campaign id in Pinia
-  - navigate to the campaign workspace shell or show a clear open action
+  - navigate directly to the new campaign workspace shell
 - On failure:
   - show contextual error
   - preserve form data
@@ -221,6 +237,7 @@ Rules:
 
 - Add campaign switcher to authenticated navigation/workspace shell.
 - Use loaded authorized campaign summaries.
+- Derive switcher labels and role/status context from TanStack Query data, not copied Pinia records.
 - Changing campaigns should:
   - update Pinia active campaign id
   - navigate to the selected campaign workspace route
@@ -265,6 +282,8 @@ Integration or mocked-query tests:
 - campaign creation mutation invalidates campaign list
 - Pinia active campaign id updates after selection
 - route middleware redirects unauthenticated users
+- route middleware rejects unsafe external `redirectTo` values
+- protected app bootstrap blocks campaign queries until `ensure_user_defaults` resolves or fails
 
 Playwright smoke tests:
 
@@ -272,6 +291,8 @@ Playwright smoke tests:
 - sign-in page loads
 - authenticated home route redirects when unauthenticated
 - campaign workspace route shows unavailable/redirect behavior when unauthenticated
+- auth callback handles success and error states
+- signed-in user hitting an inaccessible campaign route sees a generic unavailable state and returns to home
 
 Mandatory vertical-slice proof:
 
@@ -280,7 +301,7 @@ Mandatory vertical-slice proof:
 - verify campaign card appears
 - open campaign workspace shell
 
-This can be automated with a seeded local Auth user/admin script or verified with a documented manual checklist. One of those paths must be completed before the milestone is considered done.
+Automate the happy path with a seeded local Auth user/admin script and Playwright. Use a documented manual checklist only for callback/email edge cases that are not worth automating in this milestone.
 
 ### 14. Verify Locally
 
@@ -298,16 +319,31 @@ pnpm build
 pnpm test:e2e
 ```
 
-If Auth email flows cannot be fully automated locally, run and record the manual verification path.
+Because local email confirmation is disabled for this milestone, record manual callback success/error verification separately from the main e2e loop.
 
 ## Manual Steps Required From Andrew
 
 - Provide local `.env` values for Supabase URL and anon key from the local Supabase CLI output.
 - Confirm Supabase Auth local `site_url`, allowed redirect URLs, email-confirmation behavior, and magic-link behavior.
 - Manually verify any email/magic-link flow that cannot be automated locally.
-- Decide whether campaign creation should immediately navigate into the workspace or return to home with the new campaign selected.
-- Decide whether image upload should be visibly disabled in the create form or omitted until the media milestone.
-- Decide whether the mandatory e2e proof uses a seeded local Auth user script or a manual checklist.
+- Review the documented manual callback/email edge-case verification notes after implementation.
+
+## Implementation Readiness
+
+Milestone 03 is implementation-ready, subject to the pre-implementation checks below.
+
+Ready dependencies already expected from milestone 01/02:
+
+- Nuxt SPA scaffold, Pinia, TanStack Query Vue plugin, Nuxt UI, Tailwind, Zod, VeeValidate, and Playwright are available.
+- Local Supabase schema, RLS smoke tests, generated database types, and the core RPC/read surfaces exist.
+- `create_campaign`, `ensure_user_defaults`, `get_my_campaigns`, and `get_campaign_membership_summary` are the expected first-pass database contracts.
+
+Pre-implementation checks:
+
+- Run `pnpm supabase:reset`, `pnpm db:test`, and `pnpm typecheck` before wiring UI behavior against generated DB types.
+- Confirm `supabase/config.toml` local Auth redirect settings cover both `3055` and agent port `3056`.
+- Confirm local `.env` contains the local Supabase URL and anon key before auth UI/e2e work.
+- Magic-link sign-in UI is deferred; `/auth/callback` remains in this milestone.
 
 ## Success Criteria
 
@@ -316,10 +352,12 @@ If Auth email flows cannot be fully automated locally, run and record the manual
 - `/auth/callback` handles successful and failed auth redirects.
 - Authenticated home is protected by route middleware.
 - Protected-route redirects wait for session hydration and preserve intended destination.
+- Unsafe `redirectTo` values are ignored instead of navigated to.
 - A signed-in user can reach authenticated home.
-- First app entry creates or verifies user profile/settings defaults.
+- First protected app entry creates or verifies user profile/settings defaults before campaign queries run.
 - Campaign list loads through a query composable.
 - Campaign list and membership summary composables use milestone 02 safe read surfaces.
+- Campaign-by-id reads use the campaign-list projection or a dedicated safe read surface.
 - Campaign creation calls the database RPC through a mutation composable.
 - Created campaign appears on home without a full page reload.
 - Creator receives owner membership and owner role from the database workflow.
@@ -340,14 +378,14 @@ If Auth email flows cannot be fully automated locally, run and record the manual
 - Deferred features are clearly absent rather than half-implemented.
 - Create-time image upload and member invitations are explicitly tracked as later milestone work.
 
-## Open Decisions
+## Resolved Decisions
 
-- Whether campaign creation navigates directly into the new campaign workspace.
-- Whether local Auth should require email confirmation during development.
-- Whether magic-link sign-in is included immediately or only email/password for the first pass.
-- Whether profile display name defaults from email prefix or starts blank.
-- Whether create-campaign image UI is omitted or shown disabled until media support exists.
-- Whether e2e tests should seed Auth users directly or use UI-driven sign-up.
+- Campaign creation navigates directly into the new campaign workspace.
+- Local Auth email confirmation remains disabled during milestone 03; callback behavior gets manual success/error verification.
+- Magic-link sign-in UI is deferred; callback support remains included.
+- Profile display name defaults from email prefix.
+- Create-campaign image UI is omitted until media support exists.
+- E2e uses a seeded local Auth user for the happy path, with manual callback/email edge-case verification.
 
 ## Adversarial Review Notes
 

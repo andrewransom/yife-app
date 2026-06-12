@@ -12,10 +12,10 @@ export const useUiStore = defineStore('ui', {
   }),
   actions: {
     selectCampaign(campaignId: string | null) {
-      this.selectedCampaignId = campaignId;
-      if (!campaignId) {
+      if (this.selectedCampaignId !== campaignId) {
         this.selectedEntityId = null;
       }
+      this.selectedCampaignId = campaignId;
     },
     selectEntity(entityId: string | null) {
       this.selectedEntityId = entityId;

@@ -1,0 +1,1 @@
+-- Required system defaults are seeded by migrations for deterministic resets.

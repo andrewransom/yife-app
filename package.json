@@ -9,6 +9,13 @@
   "scripts": {
     "dev": "nuxt dev app --host 127.0.0.1 --port 3055",
     "dev:agent": "nuxt dev app --host 127.0.0.1 --port 3056",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset",
+    "db:types": "mkdir -p supabase/types && supabase gen types --local --lang=typescript --schema public > supabase/types/database.types.ts",
+    "db:test": "bash scripts/supabase/run-sql-tests.sh",
+    "e2e:seed-user": "node scripts/e2e/seed-local-auth-user.mjs",
+    "test:e2e:auth": "pnpm e2e:seed-user && playwright test tests/e2e/auth-vertical.spec.ts",
     "build": "nuxt generate app",
     "preview": "vite preview --host 127.0.0.1 --port 4173 --outDir app/.output/public",
     "typecheck": "nuxt typecheck app",
@@ -16,7 +23,7 @@
     "format": "prettier --write \"app/**/*.{css,ts,vue}\" \"tests/**/*.ts\" \"*.{json,mjs,ts}\"",
     "format:check": "prettier --check \"app/**/*.{css,ts,vue}\" \"tests/**/*.ts\" \"*.{json,mjs,ts}\"",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test tests/e2e/smoke.spec.ts",
     "postinstall": "nuxt prepare app"
   },
   "dependencies": {

@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { BookOpen, LogIn, Sparkles } from 'lucide-vue-next';
+import { BookOpen, LogIn, UserPlus } from 'lucide-vue-next';
+
+definePageMeta({
+  auth: 'public',
+});
 </script>
 
 <template>
@@ -13,10 +17,16 @@ import { BookOpen, LogIn, Sparkles } from 'lucide-vue-next';
         </div>
         <span class="text-sm font-semibold">Yife.app</span>
       </div>
-      <YDenseButton>
-        <LogIn class="size-4" aria-hidden="true" />
-        Sign in
-      </YDenseButton>
+      <div class="flex items-center gap-2">
+        <YDenseButton to="/auth/sign-in" variant="ghost">
+          <LogIn class="size-4" aria-hidden="true" />
+          Sign in
+        </YDenseButton>
+        <YDenseButton to="/auth/sign-up" color="primary">
+          <UserPlus class="size-4" aria-hidden="true" />
+          Create account
+        </YDenseButton>
+      </div>
     </header>
 
     <section class="grid flex-1 items-center gap-6 py-8 md:grid-cols-[1fr_24rem]">
@@ -30,11 +40,14 @@ import { BookOpen, LogIn, Sparkles } from 'lucide-vue-next';
           visibility.
         </p>
         <div class="mt-5 flex flex-wrap gap-2">
-          <YDenseButton color="primary">
-            <Sparkles class="size-4" aria-hidden="true" />
-            Create campaign
+          <YDenseButton to="/auth/sign-up" color="primary">
+            <UserPlus class="size-4" aria-hidden="true" />
+            Create account
           </YDenseButton>
-          <YDenseButton variant="outline">Open existing campaign</YDenseButton>
+          <YDenseButton to="/auth/sign-in" variant="outline">
+            <LogIn class="size-4" aria-hidden="true" />
+            Sign in
+          </YDenseButton>
         </div>
       </div>
 

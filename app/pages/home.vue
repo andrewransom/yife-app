@@ -1,22 +1,38 @@
 <script setup lang="ts">
-import { Plus, Search, Settings } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
+import { LogOut, Plus, RotateCw, Search, Settings } from 'lucide-vue-next';
+import { useProtectedAppBootstrap } from '~/composables/auth/useProtectedAppBootstrap';
+import { useSignOut } from '~/composables/auth/useSignOut';
+import { useMyCampaignsQuery } from '~/composables/campaigns/useMyCampaignsQuery';
 
-const campaigns = [
-  {
-    id: 'ember-coast',
-    name: 'Ember Coast',
-    system: 'Fantasy campaign',
-    updated: 'Updated today',
-    count: '42 entities',
-  },
-  {
-    id: 'iron-moons',
-    name: 'Iron Moons',
-    system: 'Science fantasy',
-    updated: 'Updated yesterday',
-    count: '19 entities',
-  },
-];
+definePageMeta({
+  auth: 'protected',
+});
+
+const bootstrap = useProtectedAppBootstrap();
+const campaignsQuery = useMyCampaignsQuery({
+  enabled: bootstrap.isReady,
+});
+const signOut = useSignOut();
+const isCreateOpen = ref(false);
+const signOutError = ref('');
+const campaigns = computed(() => campaignsQuery.data.value ?? []);
+const isLoadingCampaigns = computed(
+  () => campaignsQuery.isPending.value || campaignsQuery.isFetching.value,
+);
+const campaignError = computed(() => campaignsQuery.error.value);
+const isBootstrapInitializing = bootstrap.isInitializing;
+const isBootstrapError = bootstrap.isError;
+
+async function handleSignOut() {
+  signOutError.value = '';
+
+  try {
+    await signOut();
+  } catch (error) {
+    signOutError.value = error instanceof Error ? error.message : 'Sign out failed.';
+  }
+}
 </script>
 
 <template>
@@ -25,44 +41,74 @@ const campaigns = [
       <div>
         <h1 class="text-lg font-semibold">Campaign Home</h1>
         <p class="text-xs text-[var(--yife-text-muted)]">
-          Select a campaign before entering the workspace.
+          Select or create a campaign before entering the workspace.
         </p>
       </div>
       <div class="flex items-center gap-1">
-        <YIconButton :icon="Search" label="Search campaigns" />
-        <YIconButton :icon="Settings" label="Open user settings" />
-        <YDenseButton color="primary">
+        <YIconButton :icon="Search" label="Search campaigns" disabled />
+        <YIconButton :icon="Settings" label="Open user settings" disabled />
+        <YDenseButton color="primary" @click="isCreateOpen = !isCreateOpen">
           <Plus class="size-4" aria-hidden="true" />
           New
         </YDenseButton>
+        <YIconButton :icon="LogOut" label="Sign out" @click="handleSignOut" />
       </div>
     </header>
 
-    <section class="grid gap-3 py-4 md:grid-cols-2">
-      <NuxtLink
-        v-for="campaign in campaigns"
-        :key="campaign.id"
-        :to="`/campaigns/${campaign.id}`"
-        class="block border border-[var(--yife-border)] bg-[var(--yife-surface)] p-4 hover:bg-[var(--yife-surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--yife-focus)]"
+    <p v-if="signOutError" class="mt-3 text-sm text-[var(--yife-error)]">{{ signOutError }}</p>
+
+    <section v-if="isCreateOpen" class="py-4">
+      <YPanelSurface heading="Create Campaign">
+        <CampaignCreateForm @created="isCreateOpen = false" />
+      </YPanelSurface>
+    </section>
+
+    <section class="py-4">
+      <YEmptyState
+        v-if="isBootstrapInitializing"
+        :icon="RotateCw"
+        heading="Preparing your workspace"
+        text="Profile and settings defaults are being verified."
+      />
+
+      <YEmptyState
+        v-else-if="isBootstrapError"
+        heading="Workspace setup failed"
+        text="Profile and settings defaults could not be verified."
       >
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <h2 class="truncate text-base font-semibold">{{ campaign.name }}</h2>
-            <p class="mt-1 text-sm text-[var(--yife-text-muted)]">{{ campaign.system }}</p>
-          </div>
-          <YStatusBadge label="Owner" tone="info" />
-        </div>
-        <dl class="mt-4 grid grid-cols-2 gap-2 text-xs text-[var(--yife-text-muted)]">
-          <div>
-            <dt class="font-medium text-[var(--yife-text)]">Records</dt>
-            <dd>{{ campaign.count }}</dd>
-          </div>
-          <div>
-            <dt class="font-medium text-[var(--yife-text)]">Activity</dt>
-            <dd>{{ campaign.updated }}</dd>
-          </div>
-        </dl>
-      </NuxtLink>
+        <YDenseButton @click="bootstrap.retry()">Retry</YDenseButton>
+      </YEmptyState>
+
+      <YEmptyState
+        v-else-if="campaignError"
+        heading="Campaigns unavailable"
+        :text="campaignError instanceof Error ? campaignError.message : 'Campaigns could not load.'"
+      />
+
+      <div v-else-if="isLoadingCampaigns" class="grid gap-3 md:grid-cols-2">
+        <YPanelSurface v-for="index in 4" :key="index" muted>
+          <div class="h-28 animate-pulse bg-[var(--yife-surface-muted)]" />
+        </YPanelSurface>
+      </div>
+
+      <YEmptyState
+        v-else-if="campaigns.length === 0"
+        heading="No campaigns yet"
+        text="Create a campaign to open the first workspace shell."
+      >
+        <YDenseButton color="primary" @click="isCreateOpen = true">
+          <Plus class="size-4" aria-hidden="true" />
+          New campaign
+        </YDenseButton>
+      </YEmptyState>
+
+      <div v-else class="grid gap-3 md:grid-cols-2">
+        <CampaignCard
+          v-for="campaign in campaigns"
+          :key="campaign.campaign_id"
+          :campaign="campaign"
+        />
+      </div>
     </section>
   </div>
 </template>

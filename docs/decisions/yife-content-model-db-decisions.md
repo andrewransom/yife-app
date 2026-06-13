@@ -12,7 +12,7 @@ Decision: Use a hybrid model.
 - Long-form prose goes in `entity_sections`.
 - Notes are separate records, not campaign entities.
 
-Rationale: The app needs generic entity behavior, but NPCs, quests, sessions, locations, timeline events, parties, plot arcs, and encounters have real type-specific behavior.
+Rationale: The app needs generic entity behavior, but NPCs, Storylines, sessions, locations, timeline events, parties, and encounters have real type-specific behavior.
 
 ## 2. Notes
 
@@ -144,16 +144,30 @@ Decision: Use database-driven `status_definitions`.
 
 Rationale: Allows labels/order/colors/future customization without enum migrations.
 
-## 14. Open Options
+## 14. Campaign Options
 
-Decision: Use generalized `entity_option_definitions`.
+Decision: Use campaign-owned option groups and options copied from preset packs. Do not use the old `entity_option_definitions` API as an active surface.
 
 Use for:
 
 - location types
 - timeline event types
 - encounter types
-- quest priority/importance
+- Storyline category and priority
+- NPC roles
+- party disposition
+- hook category
+- faction type and scope
+- location terrain, danger, accessibility, and disposition
+- encounter difficulty
+
+Rules:
+
+- Statuses remain system-only and separate.
+- Campaign option groups are unique per campaign.
+- Campaign option keys are unique per group.
+- Typed create/update RPCs reject wrong-campaign, wrong-group, and inactive options for new selections.
+- Preset import copies selected preset rows into campaign-owned rows.
 
 Rules:
 
@@ -164,12 +178,13 @@ Rationale: Avoids many small lookup tables while preserving DB-driven options.
 
 ## 15. Configuration UI Timing
 
-Decision: MVP customization UI is only required for currencies.
+Decision: MVP customization UI is required for currencies and non-status campaign option groups touched by entity workflows.
 
-- Other config tables are seeded/default-driven.
-- Custom status/relationship/section/option UIs are deferred.
+- Statuses remain seeded/default-driven.
+- Custom relationship and section-definition UIs are deferred.
+- Global reusable user defaults for option lists are deferred.
 
-Rationale: Currency values are campaign-specific immediately; the rest can wait.
+Rationale: Currency values and non-status entity option lists are campaign-specific immediately. Statuses, relationship types, and section definitions can wait.
 
 ## 16. Roles
 

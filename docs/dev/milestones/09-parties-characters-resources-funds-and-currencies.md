@@ -172,7 +172,7 @@ Party detail should show:
 - party notes
 - party resources
 - party funds
-- related quests/sessions/locations/NPCs through related records
+- related Storylines/sessions/locations/NPCs through related records
 
 Rules:
 
@@ -194,7 +194,7 @@ Character detail should show:
 - party memberships
 - character-owned resources
 - character-owned funds
-- related sessions/quests/relationships
+- related sessions/Storylines/relationships
 
 Rules:
 

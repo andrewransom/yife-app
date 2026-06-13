@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Yife.app is a responsive web application for managing tabletop roleplaying game campaigns. It should help a single user run campaigns as a Game Master and participate in campaigns as a player, with campaign information organized around characters, sessions, quests, NPCs, locations, factions, plot arcs, encounters, timeline events, and notes.
+Yife.app is a responsive web application for managing tabletop roleplaying game campaigns. It should help a single user run campaigns as a Game Master and participate in campaigns as a player, with campaign information organized around characters, sessions, storylines, NPCs, locations, factions, encounters, timeline events, and notes.
 
 The initial product should prioritize structured campaign knowledge management over live automation. The app should make it fast to capture, browse, cross-reference, and update campaign information before and after play sessions, with lightweight note-taking support during sessions.
 
@@ -41,11 +41,11 @@ The first target user is the product owner using the app to manage campaigns. Re
 
 ### Game Master
 
-A Game Master owns or helps run a campaign. They manage world information, NPCs, sessions, plot arcs, encounters, hidden notes, quest details, and player participation.
+A Game Master owns or helps run a campaign. They manage world information, NPCs, sessions, storylines, encounters, hidden notes, quest details, arcs, and player participation.
 
 ### Player
 
-A player participates in a campaign through one or more player characters. They need access to shared campaign information, their character details, session notes, NPC directories, quests, party information, and player-visible notes.
+A player participates in a campaign through one or more player characters. They need access to shared campaign information, their character details, session notes, NPC directories, storylines, party information, and player-visible notes.
 
 ## Core Concepts
 
@@ -56,7 +56,7 @@ Most campaign entities should share common display and referencing behavior.
 Requirements:
 
 - Major campaign records should share a stable cross-system campaign entity identity.
-- Major campaign entity types should include characters, NPCs, parties, factions, locations, quests, sessions, plot arcs, encounters, and timeline events.
+- Major campaign entity types should include characters, NPCs, parties, factions, locations, storylines, sessions, encounters, and timeline events.
 - Notes are first-class records, but they are not campaign entities.
 - Entity types should be configurable/data-driven by the app, with seeded system entity types for MVP.
 - Campaign entities should have a `ListCaption` field.
@@ -67,6 +67,9 @@ Requirements:
 - Campaign entities should support archiving and soft deletion where appropriate.
 - Normal campaign views should exclude soft-deleted entities.
 - Deleted or inaccessible entity references should degrade gracefully rather than breaking layouts, relationships, mentions, pins, or tabs.
+- Campaign entities should store a core edit policy for structured/core fields.
+- Core edit checks should distinguish campaign owner, Game Master, creator, Character controlling user, and ordinary player.
+- Character owner-sensitive data may use `character_owner_gm` visibility, which is visible only to the controlling user plus campaign owners and Game Masters.
 
 ### User
 
@@ -96,11 +99,14 @@ Requirements:
   - Name.
   - Description.
   - Campaign photo or image.
+  - Virtual tabletop URL, optional.
+  - Timezone for interpreting local session times.
   - Start date.
   - End date, optional while active.
   - Status, such as planned, active, paused, completed, or archived.
-- A campaign must contain related entities, including characters, NPCs, parties, factions, locations, quests, sessions, plot arcs, encounters, timeline events, and notes.
+- A campaign must contain related entities, including characters, NPCs, parties, factions, locations, storylines, sessions, encounters, timeline events, and notes.
 - A campaign must provide different views and capabilities for Game Masters and players.
+- Campaign creation should support preset pack selection that copies campaign-owned options, palette colors, symbols, and quick stat templates from system presets.
 
 ### Campaign Membership
 
@@ -142,6 +148,15 @@ Requirements:
   - Status.
   - Player or controlling user.
   - Optional portrait/image.
+  - Optional species or ancestry text.
+  - Optional class progression rows.
+  - Optional pronouns.
+  - Optional Character Sheet URL.
+  - Short public and Game Master summaries.
+- Character quick stats should use the active campaign Character quick stat template.
+- Character quick stats default to visibility for the controlling user plus campaign owners and Game Masters.
+- Character hooks should support category, lifecycle status, visibility, Game Master note, manual ordering, and simple promotion into a Storyline.
+- Promoting a Character hook to a Storyline must not copy Game Master-only note text into player-visible Storyline fields.
 - A player must be able to view characters in campaigns they belong to.
 - A player must be able to manage their own characters, subject to campaign permissions.
 - A Game Master must be able to view and manage campaign characters.
@@ -171,6 +186,7 @@ Requirements:
 - Real status is Game Master-only.
 - Apparent status is player-visible.
 - Apparent status should default to real status when real status is changed, unless the Game Master intentionally overrides apparent status.
+- NPCs may track role, speech reminder, party disposition, relationship to party, known and true current/home locations, reporting line, public summary, Game Master summary, and a Game Master-only quick statblock.
 - Game Masters must be able to create, update, archive, and delete NPCs.
 - Players must be able to view player-visible NPC information and contribute to player-editable fields where permitted.
 
@@ -183,7 +199,11 @@ Requirements:
 - A campaign may contain one or more parties.
 - A party should include:
   - Name.
+  - Status.
   - Member characters.
+  - Home and current location.
+  - Short public and Game Master summaries.
+  - Palette color and symbol.
   - Notes.
   - Party resources.
   - Party funds.
@@ -217,6 +237,10 @@ Requirements:
   - Known members.
   - Optional parent faction.
   - Optional status.
+- A faction may include type, scope, numbers, party disposition, relationship to party, headquarters, territory, leader, public goal, Game Master true goal, palette color, and symbol.
+- Faction scope and territory are shared by default.
+- Faction numbers, headquarters, and leader are Game Master-only by default unless explicitly revealed.
+- Faction public goal and Game Master true goal are separate apparent-vs-true facts.
 - Faction information must support player-visible and Game Master-only details.
 
 ### Location
@@ -234,6 +258,9 @@ Requirements:
   - Parent location.
   - Status.
   - Optional image or map.
+- A location may include public and Game Master summaries, known/visited flags, relationship to party, party disposition, controlling faction, owner/steward, ruler/authority, population, size/scale, terrain, danger level, accessibility, palette color, and symbol.
+- Location population, size/scale, and accessibility are shared by default.
+- Location controlling faction, owner/steward, ruler/authority, and danger level are Game Master-only by default unless explicitly revealed.
 - A location may belong inside another location.
 - The location hierarchy should be flexible and not require every location to have a parent.
 - Location information must support player-visible and Game Master-only details.
@@ -260,7 +287,7 @@ Requirements:
   - Related session, optional.
   - Related entities.
 - Timeline events may link to sessions when they represent events that occurred during play.
-- Timeline events may link to characters, NPCs, parties, factions, locations, quests, sessions, plot arcs, encounters, notes, and other timeline events.
+- Timeline events may link to characters, NPCs, parties, factions, locations, storylines, sessions, encounters, notes, and other timeline events.
 - Timeline events are manually created in MVP.
 - Timeline events may optionally be linked to sessions.
 - MVP does not require automatic timeline event generation from sessions or other records.
@@ -270,36 +297,49 @@ Requirements:
 - Timeline events should support an optional sort key for chronological ordering when the date expression is not directly sortable.
 - MVP does not require a custom fantasy calendar engine.
 - Timeline event type should use a seeded option list with default options.
-- Default timeline event types should include world history, campaign event, session event, character event, faction event, location event, quest event, omen/prophecy, and other.
+- Default timeline event types should include world history, campaign event, session event, character event, faction event, location event, storyline event, omen/prophecy, and other.
 - Timeline events should support shared, Game Master-only, and private visibility.
 - Shared timeline events are player-visible.
 - Game Master-only timeline events are visible to campaign members with the Game Master role.
 - Private timeline events are visible only to their author.
 - Timeline events should be searchable and filterable.
 
-### Quest
+### Storyline
 
-A task, objective, mystery, or open thread for the campaign.
+A task, objective, mystery, open thread, or major arc for the campaign.
 
 Requirements:
 
-- A campaign must support a quest log.
-- A quest should include:
+- A campaign must support Storylines as the canonical quest/thread/arc entity.
+- A quest is a Storyline with type Quest.
+- A narrative thread is a Storyline with type Thread.
+- A plot arc is a major parent Storyline.
+- A Storyline should include:
   - Title.
   - Description.
+  - Storyline type.
   - Status.
+  - Category.
   - Priority or importance.
   - Major/minor classification.
-  - Parent quest.
+  - Parent Storyline.
+  - Primary location.
+  - Reward text.
+  - Completion timestamp.
+  - Palette color and symbol.
   - Related NPCs.
   - Related locations.
   - Related factions.
   - Related sessions.
   - Notes.
-- Quests may be hierarchical.
-- Players must have a player-facing quest log.
-- Game Masters must have access to additional private quest information.
-- Quest statuses should support at least open, in progress, completed, failed, abandoned, and hidden.
+- Storylines may be hierarchical.
+- Players must have a player-facing Storyline list for visible quests and threads.
+- Game Masters must have access to additional private Storyline information.
+- Players can create shared or private Storylines where campaign permissions allow.
+- Shared player-created Storylines default to player-editable core fields.
+- Private player-created Storylines are author-only and default to owner-editable core fields.
+- Game Master-created shared Storylines can remain Game Master-editable.
+- Storyline statuses should support open, active, completed, resolved, failed, and abandoned. Hiddenness is visibility, not a status.
 
 ### Session
 
@@ -315,7 +355,7 @@ Requirements:
   - Attending characters.
   - Notes.
   - Summary.
-  - Related quests.
+  - Related Storylines.
   - Related NPCs.
   - Related locations.
   - Related encounters.
@@ -325,25 +365,6 @@ Requirements:
 - Session attendance should track attending users and attending characters as separate facts.
 - The app should not assume that every attending user maps directly to one attending character.
 - The app should support cases where a character is present while the controlling user is absent.
-
-### Plot Arc
-
-A Game Master-facing container for organizing campaign planning.
-
-Requirements:
-
-- A campaign must support plot arcs.
-- A plot arc should include:
-  - Title.
-  - Description.
-  - Status.
-  - Related quests.
-  - Related NPCs.
-  - Related locations.
-  - Related encounters.
-  - Notes.
-- Plot arcs are Game Master-only by default.
-- Plot arcs may be used to group campaign planning information without exposing it to players.
 
 ### Encounter
 
@@ -358,7 +379,7 @@ Requirements:
   - Description.
   - Status.
   - Related session.
-  - Related plot arc.
+  - Related Storyline.
   - Related NPCs.
   - Related locations.
   - Notes.
@@ -380,7 +401,7 @@ Requirements:
   - Updated date.
   - Visibility.
 - A note must be attachable to supported entity types.
-- Supported note targets should include campaigns, characters, NPCs, parties, factions, locations, quests, sessions, plot arcs, encounters, and timeline events.
+- Supported note targets should include campaigns, characters, NPCs, parties, factions, locations, storylines, sessions, encounters, and timeline events.
 - Notes may be attached to more than one entity.
 - Notes should be discoverable from attached entities and from backlinks.
 - Notes should support shared, Game Master-only, and private visibility.
@@ -415,11 +436,11 @@ Requirements:
   - Player observations or contributions.
   - Backstories.
   - Session summaries.
-  - Quest details.
+  - Storyline details.
   - Location descriptions.
   - Encounter notes.
 - Example NPC sections should include player summary, Game Master details, and player observations.
-- Example quest sections should include player summary, Game Master details, and player observations.
+- Example Storyline sections should include Details and Game Master Details.
 - Example session sections should include summary, Game Master prep, and Game Master private notes.
 - Custom section definition UI is post-MVP.
 
@@ -429,22 +450,21 @@ The app should let users connect campaign entities without duplicating informati
 
 Requirements:
 
-- A quest may reference NPCs, locations, factions, sessions, plot arcs, timeline events, and notes.
-- An NPC may reference factions, locations, quests, sessions, encounters, timeline events, and notes.
-- A location may reference NPCs, factions, quests, sessions, encounters, timeline events, and notes.
-- A session may reference attendees, quests, NPCs, locations, encounters, timeline events, and notes.
-- A plot arc may reference quests, NPCs, locations, encounters, timeline events, and notes.
-- An encounter may reference NPCs, locations, quests, plot arcs, sessions, timeline events, and notes.
-- A timeline event may reference characters, NPCs, parties, factions, locations, quests, sessions, plot arcs, encounters, notes, and other timeline events.
-- Relationship display should be bidirectional where useful; for example, an NPC page should show related quests, and a quest page should show related NPCs.
+- A Storyline may reference NPCs, locations, factions, sessions, other Storylines, timeline events, and notes.
+- An NPC may reference factions, locations, Storylines, sessions, encounters, timeline events, and notes.
+- A location may reference NPCs, factions, Storylines, sessions, encounters, timeline events, and notes.
+- A session may reference attendees, Storylines, NPCs, locations, encounters, timeline events, and notes.
+- An encounter may reference NPCs, locations, Storylines, sessions, timeline events, and notes.
+- A timeline event may reference characters, NPCs, parties, factions, locations, Storylines, sessions, encounters, notes, and other timeline events.
+- Relationship display should be bidirectional where useful; for example, an NPC page should show related Storylines, and a Storyline page should show related NPCs.
 - Rich text references should contribute to entity relationships where practical.
 - Related-record UI should combine explicit relationships, structural links, and rich text mentions where useful.
-- Structural links should include typed relationships such as parent locations, parent quests, parent factions, encounter-session links, encounter-plot-arc links, and timeline-event session links.
+- Structural links should include typed relationships such as parent locations, parent Storylines, parent factions, encounter-session links, encounter-Storyline links, and timeline-event session links.
 - Structural links should not be treated as user-managed explicit relationships.
 - Related-record UI should be able to distinguish whether a related record came from an explicit relationship, structural link, or mention.
 - Users should be able to reference campaign entities inline from rich text fields, such as notes, descriptions, summaries, and planning text.
 - Inline rich text references should create durable links and backlinks.
-- A referenced entity should be able to show where it is mentioned, such as notes, sessions, quests, or other rich text content.
+- A referenced entity should be able to show where it is mentioned, such as notes, sessions, Storylines, or other rich text content.
 - Inline `@` references target campaign entities only in MVP.
 - Inline `@` references do not target notes in MVP.
 - Mention indexes should be rebuildable from the rich text source content.
@@ -489,8 +509,8 @@ Requirements:
 - Game Masters must be able to access Game Master-only information.
 - Players must not be able to access Game Master-only information.
 - Game Master-only information should be explicit, not inferred from entity type alone.
-- Some entities may be Game Master-only by default, including plot arcs and encounters.
-- Some fields may be Game Master-only, including NPC stat blocks and private quest details.
+- Some entities may be Game Master-only by default, including encounters and Game Master-only Storylines.
+- Some fields may be Game Master-only, including NPC stat blocks and private Storyline details.
 - Some fields or sections may be player-visible but Game Master-editable only.
 - Some fields or sections may be player-visible and player-editable.
 - Some fields or sections may be player-contributed, such as NPC nicknames, observations, and theories.
@@ -506,6 +526,7 @@ Requirements:
 - Players should not see Game Master canon unless it has been explicitly exposed.
 - Game Masters should be able to promote or copy player-authored knowledge into player-visible canon where useful.
 - Player-facing or mixed-visibility record reads must avoid exposing Game Master-only structured fields.
+- Allowlisted structured fields may carry explicit shared or Game Master-only visibility. Player-facing reads must omit hidden field values and avoid leaking labels, counts, placeholders, filters, or relationship context.
 - Sensitive creative content should live in protected sections where practical.
 - Some structured Game Master-only fields, such as NPC real status, may remain structured for workflow reasons, but must not be exposed in player-facing views.
 - Permissions must be granular enough to support different visibility and editability within the same record.
@@ -602,8 +623,8 @@ Requirements:
 - The overview should help users orient quickly before using directories, search, or saved workbench layouts.
 - The overview should respect role and visibility rules.
 - The overview should show campaign basics, including name, image, description, status, user role, and current or next session where available.
-- Game Master overview content should emphasize prep and management context, such as upcoming or recent sessions, open quests, recently changed records, pinned or important records, and quick create actions.
-- Player overview content should emphasize player-facing context, such as assigned character, party information, current or recent session, visible open quests, known NPCs or locations, and recent visible updates.
+- Game Master overview content should emphasize prep and management context, such as upcoming or recent sessions, open Storylines, recently changed records, pinned or important records, and quick create actions.
+- Player overview content should emphasize player-facing context, such as assigned character, party information, current or recent session, visible open Storylines, known NPCs or locations, and recent visible updates.
 - MVP overview can be fixed and role-aware. It does not need deep customization.
 - The overview should reuse workbench, list, and detail components where practical.
 
@@ -612,7 +633,7 @@ Requirements:
 Requirements:
 
 - A player can view player-visible campaign information.
-- A player can browse quests, NPCs, party information, locations, sessions, characters, and notes.
+- A player can browse Storylines, NPCs, party information, locations, sessions, characters, and notes.
 - A player can add notes where allowed.
 - A player can contribute to player-editable sections of shared records where allowed.
 - A player can edit their own character information where allowed.
@@ -624,7 +645,7 @@ Requirements:
 
 - A Game Master can manage all campaign entities.
 - A Game Master can see private and player-visible information.
-- A Game Master can create planning entities such as plot arcs and encounters.
+- A Game Master can create planning entities such as major parent Storylines and encounters.
 - A Game Master can decide what information is visible to players.
 - A Game Master can manage campaign members and attendance where allowed.
 
@@ -644,7 +665,7 @@ Requirements:
 
 - MVP does not require dedicated new-member or player onboarding flows.
 - Newly accepted members may land on the normal authenticated campaign experience.
-- Campaign overview, assigned character visibility, party/session/quest access, and normal navigation should be sufficient for MVP.
+- Campaign overview, assigned character visibility, party/session/Storyline access, and normal navigation should be sufficient for MVP.
 - Dedicated onboarding, tutorials, guided setup, and first-login checklists are post-MVP unless promoted.
 
 ## User Interface Requirements
@@ -686,11 +707,11 @@ Requirements:
   - Player overview.
   - Player session.
 - Game Master active session mode is a placeholder in MVP. Full active-session tools are deferred.
-- Game Master campaign development / writing prep should prioritize entity-directory access, including NPCs, locations, factions, quests, plot arcs, encounters, timeline, and relationships.
+- Game Master campaign development / writing prep should prioritize entity-directory access, including NPCs, locations, factions, Storylines, encounters, timeline, and relationships.
 - Game Master session prep should prioritize recent activity, timeline, sessions, encounters, notes, and relevant campaign context.
 - Game Master active session placeholder should reserve space for future initiative, encounter, stat block, and key player-character information tools.
-- Player overview should prioritize broad campaign lookup, including quests, NPCs, locations, party, notes, and relationships.
-- Player session should prioritize current or recent session context, session notes, party information, quests, timeline, and related entities.
+- Player overview should prioritize broad campaign lookup, including Storylines, NPCs, locations, party, notes, and relationships.
+- Player session should prioritize current or recent session context, session notes, party information, Storylines, timeline, and related entities.
 - Session-oriented layouts should support a current-session context.
 - The current session should default to the nearest upcoming session, falling back to the most recent completed session.
 - Users should be able to manually override the current session for a layout.
@@ -709,7 +730,7 @@ Requirements:
 - Users should be able to split predefined side regions into stacked zones.
 - MVP should not require arbitrary nested split panes.
 - MVP should not require a fully freeform dashboard builder.
-- A UI element, such as a session list or quest list, should be injectable into an allowed zone as a widget.
+- A UI element, such as a session list or Storyline list, should be injectable into an allowed zone as a widget.
 - Widget state should respect campaign context, selected entity context, role, and visibility permissions.
 - Widgets should support basic configurable context modes where relevant.
 - MVP widget context modes may include:
@@ -861,13 +882,13 @@ Requirements:
   - User/settings menu.
   - Role/view indicator.
 - Top-level campaign navigation should remain compact and should not compete with the workbench zones.
-- The directories menu should provide discoverable access to core campaign directories, such as overview, sessions, quests, characters, NPCs, locations, factions, parties, timeline, and notes.
-- The directories menu should show Game Master-only directories, such as plot arcs and encounters, only to users with the Game Master role.
+- The directories menu should provide discoverable access to core campaign directories, such as overview, sessions, Storylines, characters, NPCs, locations, factions, parties, timeline, and notes.
+- The directories menu should show Game Master-only directories, such as encounters and GM-only Storylines, only to users with the Game Master role.
 - Selecting a directory should focus an existing matching widget when visible.
 - If no matching widget is visible, selecting a directory should open the directory in a sensible location, such as the main zone or an appropriate list zone.
 - The directories menu is a discoverability and fallback navigation tool, not the primary power-user workflow.
-- Campaign-level navigation should expose core directories such as overview, sessions, quests, characters, NPCs, locations, factions, parties, timeline, and notes.
-- Game Master-only navigation should expose plot arcs and encounters.
+- Campaign-level navigation should expose core directories such as overview, sessions, Storylines, characters, NPCs, locations, factions, parties, timeline, and notes.
+- Game Master-only navigation should expose encounters and GM-only Storylines.
 - The UI should make role/view mode clear.
 
 ### Directory Browsing
@@ -952,7 +973,7 @@ Requirements:
 - Entity summaries should include enough display metadata for fast navigation, such as entity type, `ListCaption`, status, primary image, relevant date, parent entity, related session, update date, and deleted state where useful.
 - Derived plain text from notes and entity sections should be preserved to support search and future deep search.
 - Entity lists should support filtering by status.
-- Quest lists should support filtering by status and importance.
+- Storyline lists should support filtering by status, type, category, and priority.
 - NPC lists should support filtering by status, relationship, and faction.
 - Session lists should support filtering by date.
 - Timeline event lists should support filtering by date/date expression, event type, related session, and related entity.
@@ -1062,9 +1083,8 @@ The following data groups are required:
 - Campaign currency definitions.
 - Factions.
 - Locations.
-- Quests.
+- Storylines.
 - Sessions.
-- Plot arcs.
 - Encounters.
 - Timeline events.
 - Entity sections.
@@ -1074,7 +1094,12 @@ The following data groups are required:
 - Entity relationships.
 - Relationship types.
 - Status definitions.
-- Option definitions.
+- Campaign option groups.
+- Campaign options.
+- Option preset packs.
+- Campaign palette colors.
+- Campaign symbols.
+- Quick stat templates and fields.
 - Media assets.
 - Session attending users.
 - Session attending characters.
@@ -1091,22 +1116,48 @@ Default statuses:
 - Campaign: planned, active, paused, completed, archived.
 - Character: active, inactive, dead, retired, missing.
 - NPC apparent status and real status: alive, dead, missing, unknown, inactive.
-- Quest: open, in progress, completed, failed, abandoned, hidden.
+- Storyline: open, active, completed, resolved, failed, abandoned.
 - Session: planned, completed, cancelled.
-- Plot arc: planned, active, resolved, abandoned, hidden.
 - Encounter: planned, ready, completed, skipped, archived.
 
 ## Option List Requirements
 
-Small option lists should be configurable/data-driven by the app, with seeded system defaults for MVP.
+Small option lists should be campaign-owned, configurable/data-driven, and seedable from preset packs.
 
 Requirements:
 
-- Option lists should support location types, timeline event types, encounter types, quest priority or importance, and similar small lists.
-- MVP should provide seeded defaults for required option lists.
-- Campaign-scoped custom option values should remain possible later.
-- MVP customization UI is required only for campaign currencies.
-- Customization UI for location types, timeline event types, encounter types, quest priority/importance, and other non-currency option lists is post-MVP unless promoted.
+- Option lists should support location types, timeline event types, encounter types, Storyline category and priority, and similar small lists.
+- MVP should provide seeded defaults for required option lists through preset import.
+- Campaign-scoped custom option values are included in MVP for non-status lists touched by entity workflows.
+- Customization UI for location types, timeline event types, encounter types, Storyline category/priority, and other non-currency option lists is included through the generic campaign option manager.
+
+## Palette And Symbol Requirements
+
+Campaign palette colors and symbols should provide constrained visual metadata for dense entity UI.
+
+Requirements:
+
+- Campaign palette colors should be campaign-owned rows copied from preset packs.
+- Campaign symbols should be campaign-owned rows copied from preset packs.
+- Entity records should reference palette colors and symbols by constrained campaign-owned IDs, not arbitrary color hex strings or unvalidated icon keys.
+- Palette colors should carry enough metadata for accessible dense UI.
+- Symbols should be constrained to known app icon keys.
+- Deactivated palette colors and symbols should remain readable for existing records.
+- New selections must reject inactive rows and rows from another campaign.
+
+## Quick Stat Requirements
+
+Quick stats provide lightweight reference fields without becoming a rules engine.
+
+Requirements:
+
+- Character quick stats and NPC/Encounter statblocks should use campaign-editable templates copied from presets.
+- MVP should support one active Character quick stat template and one active NPC/Encounter statblock template per campaign.
+- Quick stat values should be stored row-per-field, not as JSON blobs.
+- Number fields and text fields must use the matching value column.
+- NPC and Encounter statblocks are Game Master-only in MVP.
+- Encounter-local statblocks may track quantity and optional per-instance current HP, max HP override, defeated flag, label, and order.
+- Quick stats must not implement formulas, automatic calculations, initiative, rounds, conditions, action economy, or combat automation.
 
 ## Settings Requirements
 
@@ -1140,19 +1191,22 @@ Requirements:
   - Campaign name.
   - Description.
   - Campaign image.
+  - Virtual tabletop URL.
+  - Campaign timezone.
   - Start date.
   - End date.
   - Campaign status.
   - Campaign membership and invitations.
   - Role assignments.
   - Default visibility preferences for new campaign content by entity type.
-  - Seeded option lists for location types, timeline event types, encounter types, and quest priority/importance.
+  - Seeded option lists for location types, timeline event types, encounter types, Storyline category/priority, and other campaign option groups.
   - Campaign currency definitions.
   - Seeded relationship type list and relationship direction defaults.
   - Default layout availability by role.
   - Campaign-level image/public media policy notice.
 - Campaign settings should expose currency customization in MVP.
-- Campaign settings may display seeded non-currency option lists in MVP, but editing those lists is post-MVP.
+- Campaign settings should expose the generic option-list manager for non-status option groups touched by MVP entity workflows.
+- Campaign settings should expose campaign palette, symbol, Character quick stat template, and NPC/Encounter statblock template managers.
 - MVP does not require global reusable user defaults for open lists.
 - Campaign settings should expose the seeded system relationship type list as configurable only if custom relationship types are promoted later.
 - Campaign settings should allow default visibility to be configured per entity type.
@@ -1291,7 +1345,7 @@ The first complete MVP should include:
 - Directory browsing and grouping.
 - Characters.
 - NPC directory.
-- Quest log.
+- Storyline list.
 - Sessions.
 - Locations.
 - Factions.
@@ -1314,7 +1368,6 @@ The first complete MVP should include:
 - Basic search and filtering.
 - Campaign image upload.
 - Light and dark themes.
-- Plot arcs.
 - Lightweight encounters.
 - Timeline events.
 - User settings.
@@ -1346,7 +1399,6 @@ The following should be considered post-MVP unless promoted:
 - Custom status taxonomy management.
 - Custom relationship type management.
 - Custom section definition UI.
-- Custom non-currency option list management.
 - Global reusable taxonomy defaults.
 
 ## Settled Decisions
@@ -1381,9 +1433,9 @@ Decision: MVP uses section-level permissions. Records can include Game Master pr
 
 Decision: party tracking is required in MVP, including simple party funds and resources. Funds and resources initially belong to parties or characters. Currency customization is MVP, with D&D-friendly defaults and gold as the standard default currency. This should not become full inventory, encumbrance, or accounting in MVP.
 
-### Plot Arc And Encounter Scope
+### Storyline And Encounter Scope
 
-Decision: plot arcs and encounters are MVP features. Encounters should be lightweight planning records in MVP, not tactical combat management or full live encounter automation.
+Decision: Storylines replace quests and plot arcs as the current MVP concept. Encounters remain lightweight planning records in MVP, not tactical combat management or full live encounter automation.
 
 ### Rules System Support
 
@@ -1445,7 +1497,7 @@ Decision: NPCs have both apparent status and real status. Real status is Game Ma
 
 ### Location Types
 
-Decision: locations have a seeded location type list with defaults such as world, continent, country, region, town, city, wilderness area, district, landmark, building, room, dungeon, plane, and other. Editing non-currency option lists is post-MVP unless promoted.
+Decision: locations have a seeded location type list with defaults such as world, continent, country, region, town, city, wilderness area, district, landmark, building, room, dungeon, plane, and other. Editing non-status option lists is handled by the generic campaign option manager.
 
 ### Timeline
 
@@ -1457,7 +1509,7 @@ Decision: timeline events use a human-readable freeform date expression plus an 
 
 ### Timeline Event Types
 
-Decision: timeline event type uses a seeded option list with defaults. Default types include world history, campaign event, session event, character event, faction event, location event, quest event, omen/prophecy, and other. Editing non-currency option lists is post-MVP unless promoted.
+Decision: timeline event type uses a seeded option list with defaults. Default types include world history, campaign event, session event, character event, faction event, location event, storyline event, omen/prophecy, and other. Editing non-currency option lists is handled by the generic campaign option manager.
 
 ### Timeline Event Visibility
 
@@ -1587,7 +1639,7 @@ Decision: user settings store global personal preferences and profile details, i
 
 ### Campaign Settings
 
-Decision: campaign settings store campaign-wide configuration such as campaign details, membership, role assignments, default visibility preferences by entity type, seeded option lists, campaign currency definitions, and media policy notice. Campaign owners and Game Masters can edit campaign-wide settings in MVP. Currency customization is MVP; non-currency option-list editing is post-MVP unless promoted.
+Decision: campaign settings store campaign-wide configuration such as campaign details, VTT URL, timezone, membership, role assignments, default visibility preferences by entity type, seeded option lists, campaign palette colors, campaign symbols, quick stat templates, campaign currency definitions, and media policy notice. Campaign owners and Game Masters can edit campaign-wide settings in MVP. Currency customization and non-status option-list editing are MVP features.
 
 ### Default Visibility Settings
 
@@ -1595,7 +1647,7 @@ Decision: default visibility is configurable per entity type. New records use th
 
 ### Open List Ownership
 
-Decision: option lists use seeded system defaults in MVP, with future campaign-scoped customization allowed by the model. MVP customization UI is required only for currencies. Global reusable user defaults for open lists are deferred.
+Decision: non-status option lists are campaign-owned in MVP and seeded from preset packs. Campaign owners and Game Masters can manage option groups touched by entity workflows through the generic option manager. Global reusable user defaults for open lists are deferred.
 
 ### Campaign Member Settings
 

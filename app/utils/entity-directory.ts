@@ -38,7 +38,8 @@ export function filterEntitySummaries(summaries: EntitySummary[], filters: Entit
       summary.parent_entity_label,
       summary.related_session_label,
       summary.location_type_label,
-      summary.quest_priority_label,
+      summary.storyline_priority_label,
+      summary.storyline_category_label,
       summary.encounter_type_label,
       summary.timeline_date_expression,
     ]

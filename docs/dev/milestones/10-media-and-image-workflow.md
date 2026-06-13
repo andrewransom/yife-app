@@ -27,6 +27,9 @@ This milestone should implement Supabase Storage public bucket usage, Postgres m
 - Generate required `thumb_160` and `grid_480` variants.
 - Implement `create_media_asset_upload` and `finalize_media_asset_upload` RPCs.
 - Assign primary images for campaigns, characters, NPCs, and locations.
+- Implement generic media links with explicit visibility for Session/entity handouts and GM reference images.
+- Support player-visible Session/entity media attachments and handouts.
+- Support reusing NPC, location, faction, encounter, and other entity art in player-visible contexts when visibility permits.
 - Render primary images in campaign cards, entity directories, pickers, and detail shells.
 - Show public-by-URL warning near every MVP upload control.
 - Add cleanup/failure handling for abandoned or failed uploads.
@@ -38,7 +41,7 @@ This milestone should implement Supabase Storage public bucket usage, Postgres m
 - No signed URL serving.
 - No server-side image processing.
 - No retained originals by default.
-- No generic note/section/gallery attachments.
+- No generic note/section/gallery attachments unless this milestone explicitly promotes media links with visibility.
 - No media moderation or virus scanning.
 - No background cleanup workers.
 - No profile avatar upload unless explicitly promoted during implementation.
@@ -48,6 +51,7 @@ This milestone should implement Supabase Storage public bucket usage, Postgres m
 
 - `media_assets` and `media_asset_variants` may already exist from M02; this milestone completes upload/finalize behavior and policies.
 - Campaigns, characters, NPCs, and locations have nullable primary image columns.
+- 04.5 may add nullable schema-only media columns such as faction symbol images, location map/symbol images, and encounter GM reference images. This milestone decides which become usable upload/assignment surfaces.
 - Public image files are acceptable for MVP if the UI warns users clearly.
 - Components must use app-owned media composables/services rather than Supabase calls directly.
 - Browser support includes modern Chrome, Edge, Firefox, Safari, mobile Safari, and mobile Chrome.
@@ -222,6 +226,27 @@ Rules:
 - Upload UI shows preview before final save.
 - Failed upload state does not clear previous image.
 - Remove/clear primary image should detach the primary reference and optionally mark unreferenced asset deleted.
+
+### 5a. Media Links, Handouts, And Reveal Art
+
+Implement reusable media links for player-visible and Game Master-only Session/entity attachments.
+
+Decisions for this milestone unless explicitly narrowed during implementation:
+
+- Faction symbol images become supported uploads through generic media links; constrained campaign symbols remain the normal 04.5 visual identity field.
+- Location map and symbol images become supported uploads through generic media links.
+- Encounter GM reference images become supported uploads through generic media links and default to Game Master-only visibility.
+- Session reveal art and entity handouts use the same generic media-link surface.
+- 04.5 must keep these fields schema-only and must not expose upload or assignment UI before this milestone.
+
+Rules:
+
+- Media links must carry visibility and must not leak hidden media metadata through counts, placeholders, previews, or related summaries.
+- Session reveal art should be represented as normal player-visible media links, not as an Encounter-only special case.
+- NPC/location/entity art reuse should point to existing ready media assets in the same campaign.
+- Upload and assignment UI must warn that MVP files are public by URL.
+- Player-facing handouts require safe summary metadata and same-campaign ready-asset validation.
+- Generic note, section, and gallery attachments remain deferred unless explicitly promoted.
 
 ### 6. Add Primary Image Targets
 

@@ -153,7 +153,11 @@ function handleCreated(entityId: string) {
         :disabled="!canCreateEntities"
         @click="openCreate"
       />
-      <YIconButton :icon="Settings" label="Campaign settings" disabled />
+      <YIconButton
+        :icon="Settings"
+        label="Campaign settings"
+        :to="`/campaigns/${campaignId}/settings`"
+      />
       <YIconButton
         :icon="PanelRightClose"
         label="Toggle context panel"

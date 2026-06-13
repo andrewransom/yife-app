@@ -6,12 +6,14 @@ withDefaults(
     icon: Component;
     label: string;
     tooltip?: string;
+    to?: string;
     color?: 'primary' | 'neutral' | 'secondary' | 'success' | 'warning' | 'error';
     variant?: 'solid' | 'outline' | 'soft' | 'ghost';
     disabled?: boolean;
   }>(),
   {
     tooltip: undefined,
+    to: undefined,
     color: 'neutral',
     variant: 'ghost',
     disabled: false,
@@ -22,6 +24,7 @@ withDefaults(
 <template>
   <UTooltip :text="tooltip || label">
     <UButton
+      :to="to"
       type="button"
       :aria-label="label"
       :color="color"

@@ -9,6 +9,21 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      app_symbol_icon_keys: {
+        Row: {
+          created_at: string
+          key: string
+        }
+        Insert: {
+          created_at?: string
+          key: string
+        }
+        Update: {
+          created_at?: string
+          key?: string
+        }
+        Relationships: []
+      }
       campaign_currency_definitions: {
         Row: {
           campaign_id: string
@@ -66,6 +81,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           campaign_id: string
+          core_edit_policy: string
           created_at: string
           created_by: string
           default_visibility: string
@@ -85,6 +101,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           campaign_id: string
+          core_edit_policy?: string
           created_at?: string
           created_by: string
           default_visibility: string
@@ -104,6 +121,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           campaign_id?: string
+          core_edit_policy?: string
           created_at?: string
           created_by?: string
           default_visibility?: string
@@ -370,6 +388,442 @@ export type Database = {
           },
         ]
       }
+      campaign_option_groups: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order: number
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_option_groups_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_options: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string
+          default_palette_color_id: string | null
+          default_symbol_id: string | null
+          description: string | null
+          group_id: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+          source_preset_group_id: string | null
+          source_preset_item_id: string | null
+          source_preset_pack_id: string | null
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          default_palette_color_id?: string | null
+          default_symbol_id?: string | null
+          description?: string | null
+          group_id: string
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order: number
+          source_preset_group_id?: string | null
+          source_preset_item_id?: string | null
+          source_preset_pack_id?: string | null
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          default_palette_color_id?: string | null
+          default_symbol_id?: string | null
+          description?: string | null
+          group_id?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          source_preset_group_id?: string | null
+          source_preset_item_id?: string | null
+          source_preset_pack_id?: string | null
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_options_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_options_default_palette_color_id_fkey"
+            columns: ["default_palette_color_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_palette_colors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_options_default_symbol_id_fkey"
+            columns: ["default_symbol_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_symbols"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_options_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_option_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_options_source_preset_group_id_fkey"
+            columns: ["source_preset_group_id"]
+            isOneToOne: false
+            referencedRelation: "option_preset_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_options_source_preset_item_id_fkey"
+            columns: ["source_preset_item_id"]
+            isOneToOne: false
+            referencedRelation: "option_preset_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_options_source_preset_pack_id_fkey"
+            columns: ["source_preset_pack_id"]
+            isOneToOne: false
+            referencedRelation: "option_preset_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_palette_colors: {
+        Row: {
+          campaign_id: string
+          color_token: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+          source_preset_color_id: string | null
+          source_preset_pack_id: string | null
+          text_color_token: string | null
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          campaign_id: string
+          color_token: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order: number
+          source_preset_color_id?: string | null
+          source_preset_pack_id?: string | null
+          text_color_token?: string | null
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          campaign_id?: string
+          color_token?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          source_preset_color_id?: string | null
+          source_preset_pack_id?: string | null
+          text_color_token?: string | null
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_palette_colors_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_palette_colors_source_preset_color_id_fkey"
+            columns: ["source_preset_color_id"]
+            isOneToOne: false
+            referencedRelation: "palette_preset_colors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_palette_colors_source_preset_pack_id_fkey"
+            columns: ["source_preset_pack_id"]
+            isOneToOne: false
+            referencedRelation: "option_preset_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_quick_stat_fields: {
+        Row: {
+          campaign_id: string
+          compact_label: string
+          created_at: string
+          created_by: string
+          default_visibility: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          max_value: number | null
+          min_value: number | null
+          sort_order: number
+          template_id: string
+          updated_at: string
+          updated_by: string
+          value_type: string
+        }
+        Insert: {
+          campaign_id: string
+          compact_label: string
+          created_at?: string
+          created_by: string
+          default_visibility: string
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          max_value?: number | null
+          min_value?: number | null
+          sort_order: number
+          template_id: string
+          updated_at?: string
+          updated_by: string
+          value_type: string
+        }
+        Update: {
+          campaign_id?: string
+          compact_label?: string
+          created_at?: string
+          created_by?: string
+          default_visibility?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          max_value?: number | null
+          min_value?: number | null
+          sort_order?: number
+          template_id?: string
+          updated_at?: string
+          updated_by?: string
+          value_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_quick_stat_fields_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_quick_stat_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_quick_stat_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_quick_stat_templates: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          label: string
+          source_preset_template_id: string | null
+          template_kind: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          label: string
+          source_preset_template_id?: string | null
+          template_kind: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          source_preset_template_id?: string | null
+          template_kind?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_quick_stat_templates_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_quick_stat_templates_source_preset_template_id_fkey"
+            columns: ["source_preset_template_id"]
+            isOneToOne: false
+            referencedRelation: "quick_stat_preset_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_symbols: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string
+          icon_key: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+          source_preset_pack_id: string | null
+          source_preset_symbol_id: string | null
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          icon_key: string
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order: number
+          source_preset_pack_id?: string | null
+          source_preset_symbol_id?: string | null
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          icon_key?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          source_preset_pack_id?: string | null
+          source_preset_symbol_id?: string | null
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_symbols_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_symbols_icon_key_fkey"
+            columns: ["icon_key"]
+            isOneToOne: false
+            referencedRelation: "app_symbol_icon_keys"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "campaign_symbols_source_preset_pack_id_fkey"
+            columns: ["source_preset_pack_id"]
+            isOneToOne: false
+            referencedRelation: "option_preset_packs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_symbols_source_preset_symbol_id_fkey"
+            columns: ["source_preset_symbol_id"]
+            isOneToOne: false
+            referencedRelation: "symbol_preset_symbols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           created_at: string
@@ -382,8 +836,10 @@ export type Database = {
           owner_user_id: string
           start_date: string
           status_id: string
+          timezone: string
           updated_at: string
           updated_by: string
+          vtt_url: string | null
         }
         Insert: {
           created_at?: string
@@ -396,8 +852,10 @@ export type Database = {
           owner_user_id: string
           start_date: string
           status_id: string
+          timezone?: string
           updated_at?: string
           updated_by: string
+          vtt_url?: string | null
         }
         Update: {
           created_at?: string
@@ -410,8 +868,10 @@ export type Database = {
           owner_user_id?: string
           start_date?: string
           status_id?: string
+          timezone?: string
           updated_at?: string
           updated_by?: string
+          vtt_url?: string | null
         }
         Relationships: [
           {
@@ -430,36 +890,198 @@ export type Database = {
           },
         ]
       }
+      character_class_progressions: {
+        Row: {
+          campaign_id: string
+          character_entity_id: string
+          class_name: string
+          created_at: string
+          created_by: string
+          id: string
+          level_number: number
+          sort_order: number
+          subclass_name: string | null
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          campaign_id: string
+          character_entity_id: string
+          class_name: string
+          created_at?: string
+          created_by: string
+          id?: string
+          level_number: number
+          sort_order?: number
+          subclass_name?: string | null
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          campaign_id?: string
+          character_entity_id?: string
+          class_name?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          level_number?: number
+          sort_order?: number
+          subclass_name?: string | null
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_class_progressions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_class_progressions_character_entity_id_fkey"
+            columns: ["character_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_hooks: {
+        Row: {
+          campaign_id: string
+          category_option_id: string | null
+          character_entity_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          description_text: string
+          gm_note_text: string | null
+          id: string
+          promoted_storyline_entity_id: string | null
+          sort_order: number
+          status_id: string
+          updated_at: string
+          updated_by: string
+          visibility: string
+        }
+        Insert: {
+          campaign_id: string
+          category_option_id?: string | null
+          character_entity_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          description_text: string
+          gm_note_text?: string | null
+          id?: string
+          promoted_storyline_entity_id?: string | null
+          sort_order?: number
+          status_id: string
+          updated_at?: string
+          updated_by: string
+          visibility: string
+        }
+        Update: {
+          campaign_id?: string
+          category_option_id?: string | null
+          character_entity_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          description_text?: string
+          gm_note_text?: string | null
+          id?: string
+          promoted_storyline_entity_id?: string | null
+          sort_order?: number
+          status_id?: string
+          updated_at?: string
+          updated_by?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_hooks_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_hooks_category_option_id_fkey"
+            columns: ["category_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_hooks_character_entity_id_fkey"
+            columns: ["character_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_hooks_promoted_storyline_entity_id_fkey"
+            columns: ["promoted_storyline_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_hooks_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "status_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       characters: {
         Row: {
+          character_sheet_url: string | null
           controlling_user_id: string
           created_at: string
           created_by: string
           entity_id: string
+          gm_summary: string | null
           image_asset_id: string | null
           name: string
+          pronouns: string | null
+          public_summary: string | null
+          species_ancestry_text: string | null
           status_id: string
           updated_at: string
           updated_by: string
         }
         Insert: {
+          character_sheet_url?: string | null
           controlling_user_id: string
           created_at?: string
           created_by: string
           entity_id: string
+          gm_summary?: string | null
           image_asset_id?: string | null
           name: string
+          pronouns?: string | null
+          public_summary?: string | null
+          species_ancestry_text?: string | null
           status_id: string
           updated_at?: string
           updated_by: string
         }
         Update: {
+          character_sheet_url?: string | null
           controlling_user_id?: string
           created_at?: string
           created_by?: string
           entity_id?: string
+          gm_summary?: string | null
           image_asset_id?: string | null
           name?: string
+          pronouns?: string | null
+          public_summary?: string | null
+          species_ancestry_text?: string | null
           status_id?: string
           updated_at?: string
           updated_by?: string
@@ -488,49 +1110,259 @@ export type Database = {
           },
         ]
       }
+      encounter_statblock_instances: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string
+          current_hp: number | null
+          deleted_at: string | null
+          encounter_statblock_id: string
+          id: string
+          is_defeated: boolean
+          label: string | null
+          max_hp_override: number | null
+          sort_order: number
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          current_hp?: number | null
+          deleted_at?: string | null
+          encounter_statblock_id: string
+          id?: string
+          is_defeated?: boolean
+          label?: string | null
+          max_hp_override?: number | null
+          sort_order?: number
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          current_hp?: number | null
+          deleted_at?: string | null
+          encounter_statblock_id?: string
+          id?: string
+          is_defeated?: boolean
+          label?: string | null
+          max_hp_override?: number | null
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encounter_statblock_instances_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encounter_statblock_instances_encounter_statblock_id_fkey"
+            columns: ["encounter_statblock_id"]
+            isOneToOne: false
+            referencedRelation: "encounter_statblocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      encounter_statblock_values: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string
+          encounter_statblock_id: string
+          field_id: string
+          id: string
+          updated_at: string
+          updated_by: string
+          value_number: number | null
+          value_text: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          encounter_statblock_id: string
+          field_id: string
+          id?: string
+          updated_at?: string
+          updated_by: string
+          value_number?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          encounter_statblock_id?: string
+          field_id?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string
+          value_number?: number | null
+          value_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encounter_statblock_values_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encounter_statblock_values_encounter_statblock_id_fkey"
+            columns: ["encounter_statblock_id"]
+            isOneToOne: false
+            referencedRelation: "encounter_statblocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encounter_statblock_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_quick_stat_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      encounter_statblocks: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          encounter_entity_id: string
+          id: string
+          label: string
+          linked_npc_entity_id: string | null
+          quantity: number
+          sort_order: number
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          encounter_entity_id: string
+          id?: string
+          label: string
+          linked_npc_entity_id?: string | null
+          quantity?: number
+          sort_order?: number
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          encounter_entity_id?: string
+          id?: string
+          label?: string
+          linked_npc_entity_id?: string | null
+          quantity?: number
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encounter_statblocks_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encounter_statblocks_encounter_entity_id_fkey"
+            columns: ["encounter_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encounter_statblocks_linked_npc_entity_id_fkey"
+            columns: ["linked_npc_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       encounters: {
         Row: {
           created_at: string
           created_by: string
+          difficulty_option_id: string | null
           encounter_type_option_id: string
           entity_id: string
-          related_plot_arc_entity_id: string | null
+          image_asset_id: string | null
+          palette_color_id: string | null
           related_session_entity_id: string | null
+          related_storyline_entity_id: string | null
+          sort_order: number | null
           status_id: string
-          title: string
+          title: string | null
           updated_at: string
           updated_by: string
         }
         Insert: {
           created_at?: string
           created_by: string
+          difficulty_option_id?: string | null
           encounter_type_option_id: string
           entity_id: string
-          related_plot_arc_entity_id?: string | null
+          image_asset_id?: string | null
+          palette_color_id?: string | null
           related_session_entity_id?: string | null
+          related_storyline_entity_id?: string | null
+          sort_order?: number | null
           status_id: string
-          title: string
+          title?: string | null
           updated_at?: string
           updated_by: string
         }
         Update: {
           created_at?: string
           created_by?: string
+          difficulty_option_id?: string | null
           encounter_type_option_id?: string
           entity_id?: string
-          related_plot_arc_entity_id?: string | null
+          image_asset_id?: string | null
+          palette_color_id?: string | null
           related_session_entity_id?: string | null
+          related_storyline_entity_id?: string | null
+          sort_order?: number | null
           status_id?: string
-          title?: string
+          title?: string | null
           updated_at?: string
           updated_by?: string
         }
         Relationships: [
           {
+            foreignKeyName: "encounters_difficulty_option_id_fkey"
+            columns: ["difficulty_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "encounters_encounter_type_option_id_fkey"
             columns: ["encounter_type_option_id"]
             isOneToOne: false
-            referencedRelation: "entity_option_definitions"
+            referencedRelation: "campaign_options"
             referencedColumns: ["id"]
           },
           {
@@ -541,15 +1373,29 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "encounters_related_plot_arc_entity_id_fkey"
-            columns: ["related_plot_arc_entity_id"]
+            foreignKeyName: "encounters_image_asset_id_fkey"
+            columns: ["image_asset_id"]
             isOneToOne: false
-            referencedRelation: "campaign_entities"
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encounters_palette_color_id_fkey"
+            columns: ["palette_color_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_palette_colors"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "encounters_related_session_entity_id_fkey"
             columns: ["related_session_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encounters_related_storyline_entity_id_fkey"
+            columns: ["related_storyline_entity_id"]
             isOneToOne: false
             referencedRelation: "campaign_entities"
             referencedColumns: ["id"]
@@ -613,65 +1459,66 @@ export type Database = {
           },
         ]
       }
-      entity_option_definitions: {
+      entity_quick_stat_values: {
         Row: {
-          campaign_id: string | null
+          campaign_id: string
           created_at: string
-          created_by: string | null
-          entity_type_id: string | null
-          group_key: string
+          created_by: string
+          entity_id: string
+          field_id: string
           id: string
-          is_active: boolean
-          is_system: boolean
-          key: string
-          label: string
-          sort_order: number
           updated_at: string
-          updated_by: string | null
+          updated_by: string
+          value_number: number | null
+          value_text: string | null
+          visibility: string
         }
         Insert: {
-          campaign_id?: string | null
+          campaign_id: string
           created_at?: string
-          created_by?: string | null
-          entity_type_id?: string | null
-          group_key: string
+          created_by: string
+          entity_id: string
+          field_id: string
           id?: string
-          is_active?: boolean
-          is_system?: boolean
-          key: string
-          label: string
-          sort_order: number
           updated_at?: string
-          updated_by?: string | null
+          updated_by: string
+          value_number?: number | null
+          value_text?: string | null
+          visibility: string
         }
         Update: {
-          campaign_id?: string | null
+          campaign_id?: string
           created_at?: string
-          created_by?: string | null
-          entity_type_id?: string | null
-          group_key?: string
+          created_by?: string
+          entity_id?: string
+          field_id?: string
           id?: string
-          is_active?: boolean
-          is_system?: boolean
-          key?: string
-          label?: string
-          sort_order?: number
           updated_at?: string
-          updated_by?: string | null
+          updated_by?: string
+          value_number?: number | null
+          value_text?: string | null
+          visibility?: string
         }
         Relationships: [
           {
-            foreignKeyName: "entity_option_definitions_campaign_id_fkey"
+            foreignKeyName: "entity_quick_stat_values_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "entity_option_definitions_entity_type_id_fkey"
-            columns: ["entity_type_id"]
+            foreignKeyName: "entity_quick_stat_values_entity_id_fkey"
+            columns: ["entity_id"]
             isOneToOne: false
-            referencedRelation: "entity_types"
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_quick_stat_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_quick_stat_fields"
             referencedColumns: ["id"]
           },
         ]
@@ -848,9 +1695,29 @@ export type Database = {
           created_at: string
           created_by: string
           entity_id: string
+          faction_type_option_id: string | null
+          gm_summary: string | null
+          gm_true_goal_text: string | null
+          headquarters_location_entity_id: string | null
+          headquarters_visibility: string
+          leader_entity_id: string | null
+          leader_visibility: string
           name: string
+          numbers_text: string | null
+          numbers_visibility: string
+          palette_color_id: string | null
           parent_faction_entity_id: string | null
+          party_disposition_option_id: string | null
+          public_goal_text: string | null
+          public_summary: string | null
+          relationship_to_party_text: string | null
+          scope_option_id: string | null
+          scope_visibility: string
           status_id: string | null
+          symbol_id: string | null
+          symbol_image_asset_id: string | null
+          territory_location_entity_id: string | null
+          territory_visibility: string
           updated_at: string
           updated_by: string
         }
@@ -858,9 +1725,29 @@ export type Database = {
           created_at?: string
           created_by: string
           entity_id: string
+          faction_type_option_id?: string | null
+          gm_summary?: string | null
+          gm_true_goal_text?: string | null
+          headquarters_location_entity_id?: string | null
+          headquarters_visibility?: string
+          leader_entity_id?: string | null
+          leader_visibility?: string
           name: string
+          numbers_text?: string | null
+          numbers_visibility?: string
+          palette_color_id?: string | null
           parent_faction_entity_id?: string | null
+          party_disposition_option_id?: string | null
+          public_goal_text?: string | null
+          public_summary?: string | null
+          relationship_to_party_text?: string | null
+          scope_option_id?: string | null
+          scope_visibility?: string
           status_id?: string | null
+          symbol_id?: string | null
+          symbol_image_asset_id?: string | null
+          territory_location_entity_id?: string | null
+          territory_visibility?: string
           updated_at?: string
           updated_by: string
         }
@@ -868,9 +1755,29 @@ export type Database = {
           created_at?: string
           created_by?: string
           entity_id?: string
+          faction_type_option_id?: string | null
+          gm_summary?: string | null
+          gm_true_goal_text?: string | null
+          headquarters_location_entity_id?: string | null
+          headquarters_visibility?: string
+          leader_entity_id?: string | null
+          leader_visibility?: string
           name?: string
+          numbers_text?: string | null
+          numbers_visibility?: string
+          palette_color_id?: string | null
           parent_faction_entity_id?: string | null
+          party_disposition_option_id?: string | null
+          public_goal_text?: string | null
+          public_summary?: string | null
+          relationship_to_party_text?: string | null
+          scope_option_id?: string | null
+          scope_visibility?: string
           status_id?: string | null
+          symbol_id?: string | null
+          symbol_image_asset_id?: string | null
+          territory_location_entity_id?: string | null
+          territory_visibility?: string
           updated_at?: string
           updated_by?: string
         }
@@ -883,10 +1790,52 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "factions_faction_type_option_id_fkey"
+            columns: ["faction_type_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factions_headquarters_location_entity_id_fkey"
+            columns: ["headquarters_location_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factions_leader_entity_id_fkey"
+            columns: ["leader_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factions_palette_color_id_fkey"
+            columns: ["palette_color_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_palette_colors"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "factions_parent_faction_entity_id_fkey"
             columns: ["parent_faction_entity_id"]
             isOneToOne: false
             referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factions_party_disposition_option_id_fkey"
+            columns: ["party_disposition_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factions_scope_option_id_fkey"
+            columns: ["scope_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
             referencedColumns: ["id"]
           },
           {
@@ -896,46 +1845,163 @@ export type Database = {
             referencedRelation: "status_definitions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "factions_symbol_id_fkey"
+            columns: ["symbol_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_symbols"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factions_symbol_image_asset_id_fkey"
+            columns: ["symbol_image_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factions_territory_location_entity_id_fkey"
+            columns: ["territory_location_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
         ]
       }
       locations: {
         Row: {
+          accessibility_option_id: string | null
+          accessibility_visibility: string
+          controlling_faction_entity_id: string | null
+          controlling_faction_visibility: string
           created_at: string
           created_by: string
+          danger_level_option_id: string | null
+          danger_level_visibility: string
           entity_id: string
+          gm_summary: string | null
           image_asset_id: string | null
-          location_type_option_id: string
+          known_to_party: boolean
+          location_type_option_id: string | null
+          map_image_asset_id: string | null
           name: string
+          owner_or_steward_entity_id: string | null
+          owner_or_steward_visibility: string
+          palette_color_id: string | null
           parent_location_entity_id: string | null
+          party_disposition_option_id: string | null
+          population_text: string | null
+          population_visibility: string
+          public_summary: string | null
+          relationship_to_party_text: string | null
+          ruler_or_authority_entity_id: string | null
+          ruler_or_authority_visibility: string
+          size_or_scale_text: string | null
+          size_or_scale_visibility: string
           status_id: string | null
+          symbol_id: string | null
+          symbol_image_asset_id: string | null
+          terrain_option_id: string | null
           updated_at: string
           updated_by: string
+          visited_by_party: boolean
         }
         Insert: {
+          accessibility_option_id?: string | null
+          accessibility_visibility?: string
+          controlling_faction_entity_id?: string | null
+          controlling_faction_visibility?: string
           created_at?: string
           created_by: string
+          danger_level_option_id?: string | null
+          danger_level_visibility?: string
           entity_id: string
+          gm_summary?: string | null
           image_asset_id?: string | null
-          location_type_option_id: string
+          known_to_party?: boolean
+          location_type_option_id?: string | null
+          map_image_asset_id?: string | null
           name: string
+          owner_or_steward_entity_id?: string | null
+          owner_or_steward_visibility?: string
+          palette_color_id?: string | null
           parent_location_entity_id?: string | null
+          party_disposition_option_id?: string | null
+          population_text?: string | null
+          population_visibility?: string
+          public_summary?: string | null
+          relationship_to_party_text?: string | null
+          ruler_or_authority_entity_id?: string | null
+          ruler_or_authority_visibility?: string
+          size_or_scale_text?: string | null
+          size_or_scale_visibility?: string
           status_id?: string | null
+          symbol_id?: string | null
+          symbol_image_asset_id?: string | null
+          terrain_option_id?: string | null
           updated_at?: string
           updated_by: string
+          visited_by_party?: boolean
         }
         Update: {
+          accessibility_option_id?: string | null
+          accessibility_visibility?: string
+          controlling_faction_entity_id?: string | null
+          controlling_faction_visibility?: string
           created_at?: string
           created_by?: string
+          danger_level_option_id?: string | null
+          danger_level_visibility?: string
           entity_id?: string
+          gm_summary?: string | null
           image_asset_id?: string | null
-          location_type_option_id?: string
+          known_to_party?: boolean
+          location_type_option_id?: string | null
+          map_image_asset_id?: string | null
           name?: string
+          owner_or_steward_entity_id?: string | null
+          owner_or_steward_visibility?: string
+          palette_color_id?: string | null
           parent_location_entity_id?: string | null
+          party_disposition_option_id?: string | null
+          population_text?: string | null
+          population_visibility?: string
+          public_summary?: string | null
+          relationship_to_party_text?: string | null
+          ruler_or_authority_entity_id?: string | null
+          ruler_or_authority_visibility?: string
+          size_or_scale_text?: string | null
+          size_or_scale_visibility?: string
           status_id?: string | null
+          symbol_id?: string | null
+          symbol_image_asset_id?: string | null
+          terrain_option_id?: string | null
           updated_at?: string
           updated_by?: string
+          visited_by_party?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "locations_accessibility_option_id_fkey"
+            columns: ["accessibility_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_controlling_faction_entity_id_fkey"
+            columns: ["controlling_faction_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_danger_level_option_id_fkey"
+            columns: ["danger_level_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "locations_entity_id_fkey"
             columns: ["entity_id"]
@@ -954,7 +2020,28 @@ export type Database = {
             foreignKeyName: "locations_location_type_option_id_fkey"
             columns: ["location_type_option_id"]
             isOneToOne: false
-            referencedRelation: "entity_option_definitions"
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_map_image_asset_id_fkey"
+            columns: ["map_image_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_owner_or_steward_entity_id_fkey"
+            columns: ["owner_or_steward_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_palette_color_id_fkey"
+            columns: ["palette_color_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_palette_colors"
             referencedColumns: ["id"]
           },
           {
@@ -965,10 +2052,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "locations_party_disposition_option_id_fkey"
+            columns: ["party_disposition_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_ruler_or_authority_entity_id_fkey"
+            columns: ["ruler_or_authority_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "locations_status_id_fkey"
             columns: ["status_id"]
             isOneToOne: false
             referencedRelation: "status_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_symbol_id_fkey"
+            columns: ["symbol_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_symbols"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_symbol_image_asset_id_fkey"
+            columns: ["symbol_image_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locations_terrain_option_id_fkey"
+            columns: ["terrain_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
             referencedColumns: ["id"]
           },
         ]
@@ -1122,9 +2244,21 @@ export type Database = {
           created_by: string
           entity_id: string
           faction_entity_id: string | null
+          gm_current_location_entity_id: string | null
+          gm_home_location_entity_id: string | null
+          gm_summary: string | null
           image_asset_id: string | null
           name: string
+          party_disposition_option_id: string | null
+          public_current_location_entity_id: string | null
+          public_home_location_entity_id: string | null
+          public_summary: string | null
           real_status_id: string
+          relationship_to_party_text: string | null
+          reports_to_entity_id: string | null
+          role_label: string | null
+          role_option_id: string | null
+          speech_text: string | null
           stat_block_jsonb: Json | null
           updated_at: string
           updated_by: string
@@ -1135,9 +2269,21 @@ export type Database = {
           created_by: string
           entity_id: string
           faction_entity_id?: string | null
+          gm_current_location_entity_id?: string | null
+          gm_home_location_entity_id?: string | null
+          gm_summary?: string | null
           image_asset_id?: string | null
           name: string
+          party_disposition_option_id?: string | null
+          public_current_location_entity_id?: string | null
+          public_home_location_entity_id?: string | null
+          public_summary?: string | null
           real_status_id: string
+          relationship_to_party_text?: string | null
+          reports_to_entity_id?: string | null
+          role_label?: string | null
+          role_option_id?: string | null
+          speech_text?: string | null
           stat_block_jsonb?: Json | null
           updated_at?: string
           updated_by: string
@@ -1148,9 +2294,21 @@ export type Database = {
           created_by?: string
           entity_id?: string
           faction_entity_id?: string | null
+          gm_current_location_entity_id?: string | null
+          gm_home_location_entity_id?: string | null
+          gm_summary?: string | null
           image_asset_id?: string | null
           name?: string
+          party_disposition_option_id?: string | null
+          public_current_location_entity_id?: string | null
+          public_home_location_entity_id?: string | null
+          public_summary?: string | null
           real_status_id?: string
+          relationship_to_party_text?: string | null
+          reports_to_entity_id?: string | null
+          role_label?: string | null
+          role_option_id?: string | null
+          speech_text?: string | null
           stat_block_jsonb?: Json | null
           updated_at?: string
           updated_by?: string
@@ -1178,10 +2336,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "npcs_gm_current_location_entity_id_fkey"
+            columns: ["gm_current_location_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "npcs_gm_home_location_entity_id_fkey"
+            columns: ["gm_home_location_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "npcs_image_asset_id_fkey"
             columns: ["image_asset_id"]
             isOneToOne: false
             referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "npcs_party_disposition_option_id_fkey"
+            columns: ["party_disposition_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "npcs_public_current_location_entity_id_fkey"
+            columns: ["public_current_location_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "npcs_public_home_location_entity_id_fkey"
+            columns: ["public_home_location_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
             referencedColumns: ["id"]
           },
           {
@@ -1191,34 +2384,235 @@ export type Database = {
             referencedRelation: "status_definitions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "npcs_reports_to_entity_id_fkey"
+            columns: ["reports_to_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "npcs_role_option_id_fkey"
+            columns: ["role_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      option_preset_groups: {
+        Row: {
+          description: string | null
+          group_key: string
+          id: string
+          is_active: boolean
+          label: string
+          preset_pack_id: string
+          sort_order: number
+        }
+        Insert: {
+          description?: string | null
+          group_key: string
+          id?: string
+          is_active?: boolean
+          label: string
+          preset_pack_id: string
+          sort_order: number
+        }
+        Update: {
+          description?: string | null
+          group_key?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          preset_pack_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "option_preset_groups_preset_pack_id_fkey"
+            columns: ["preset_pack_id"]
+            isOneToOne: false
+            referencedRelation: "option_preset_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      option_preset_items: {
+        Row: {
+          default_palette_color_key: string | null
+          default_symbol_key: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          preset_group_id: string
+          sort_order: number
+        }
+        Insert: {
+          default_palette_color_key?: string | null
+          default_symbol_key?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          preset_group_id: string
+          sort_order: number
+        }
+        Update: {
+          default_palette_color_key?: string | null
+          default_symbol_key?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          preset_group_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "option_preset_items_preset_group_id_fkey"
+            columns: ["preset_group_id"]
+            isOneToOne: false
+            referencedRelation: "option_preset_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      option_preset_packs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_system: boolean
+          key: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          key: string
+          label: string
+          sort_order: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      palette_preset_colors: {
+        Row: {
+          color_token: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          preset_pack_id: string
+          sort_order: number
+          text_color_token: string | null
+        }
+        Insert: {
+          color_token: string
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          preset_pack_id: string
+          sort_order: number
+          text_color_token?: string | null
+        }
+        Update: {
+          color_token?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          preset_pack_id?: string
+          sort_order?: number
+          text_color_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "palette_preset_colors_preset_pack_id_fkey"
+            columns: ["preset_pack_id"]
+            isOneToOne: false
+            referencedRelation: "option_preset_packs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       parties: {
         Row: {
           created_at: string
           created_by: string
+          current_location_entity_id: string | null
           entity_id: string
+          gm_summary: string | null
+          home_location_entity_id: string | null
           name: string
+          palette_color_id: string | null
+          public_summary: string | null
+          status_id: string | null
+          symbol_id: string | null
           updated_at: string
           updated_by: string
         }
         Insert: {
           created_at?: string
           created_by: string
+          current_location_entity_id?: string | null
           entity_id: string
+          gm_summary?: string | null
+          home_location_entity_id?: string | null
           name: string
+          palette_color_id?: string | null
+          public_summary?: string | null
+          status_id?: string | null
+          symbol_id?: string | null
           updated_at?: string
           updated_by: string
         }
         Update: {
           created_at?: string
           created_by?: string
+          current_location_entity_id?: string | null
           entity_id?: string
+          gm_summary?: string | null
+          home_location_entity_id?: string | null
           name?: string
+          palette_color_id?: string | null
+          public_summary?: string | null
+          status_id?: string | null
+          symbol_id?: string | null
           updated_at?: string
           updated_by?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "parties_current_location_entity_id_fkey"
+            columns: ["current_location_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "parties_entity_id_fkey"
             columns: ["entity_id"]
@@ -1226,117 +2620,171 @@ export type Database = {
             referencedRelation: "campaign_entities"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      plot_arcs: {
-        Row: {
-          created_at: string
-          created_by: string
-          entity_id: string
-          status_id: string
-          title: string
-          updated_at: string
-          updated_by: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          entity_id: string
-          status_id: string
-          title: string
-          updated_at?: string
-          updated_by: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          entity_id?: string
-          status_id?: string
-          title?: string
-          updated_at?: string
-          updated_by?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "plot_arcs_entity_id_fkey"
-            columns: ["entity_id"]
-            isOneToOne: true
+            foreignKeyName: "parties_home_location_entity_id_fkey"
+            columns: ["home_location_entity_id"]
+            isOneToOne: false
             referencedRelation: "campaign_entities"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "plot_arcs_status_id_fkey"
+            foreignKeyName: "parties_palette_color_id_fkey"
+            columns: ["palette_color_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_palette_colors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parties_status_id_fkey"
             columns: ["status_id"]
             isOneToOne: false
             referencedRelation: "status_definitions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "parties_symbol_id_fkey"
+            columns: ["symbol_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_symbols"
+            referencedColumns: ["id"]
+          },
         ]
       }
-      quests: {
+      party_members: {
         Row: {
+          character_entity_id: string
           created_at: string
           created_by: string
-          entity_id: string
-          is_major: boolean
-          parent_quest_entity_id: string | null
-          priority_option_id: string | null
-          status_id: string
-          title: string
+          is_active: boolean
+          party_entity_id: string
+          role_label: string | null
+          sort_order: number
           updated_at: string
           updated_by: string
         }
         Insert: {
+          character_entity_id: string
           created_at?: string
           created_by: string
-          entity_id: string
-          is_major?: boolean
-          parent_quest_entity_id?: string | null
-          priority_option_id?: string | null
-          status_id: string
-          title: string
+          is_active?: boolean
+          party_entity_id: string
+          role_label?: string | null
+          sort_order?: number
           updated_at?: string
           updated_by: string
         }
         Update: {
+          character_entity_id?: string
           created_at?: string
           created_by?: string
-          entity_id?: string
-          is_major?: boolean
-          parent_quest_entity_id?: string | null
-          priority_option_id?: string | null
-          status_id?: string
-          title?: string
+          is_active?: boolean
+          party_entity_id?: string
+          role_label?: string | null
+          sort_order?: number
           updated_at?: string
           updated_by?: string
         }
         Relationships: [
           {
-            foreignKeyName: "quests_entity_id_fkey"
-            columns: ["entity_id"]
-            isOneToOne: true
-            referencedRelation: "campaign_entities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quests_parent_quest_entity_id_fkey"
-            columns: ["parent_quest_entity_id"]
+            foreignKeyName: "party_members_character_entity_id_fkey"
+            columns: ["character_entity_id"]
             isOneToOne: false
             referencedRelation: "campaign_entities"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "quests_priority_option_id_fkey"
-            columns: ["priority_option_id"]
+            foreignKeyName: "party_members_party_entity_id_fkey"
+            columns: ["party_entity_id"]
             isOneToOne: false
-            referencedRelation: "entity_option_definitions"
+            referencedRelation: "campaign_entities"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      quick_stat_preset_fields: {
+        Row: {
+          compact_label: string
+          default_visibility: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          max_value: number | null
+          min_value: number | null
+          preset_template_id: string
+          sort_order: number
+          value_type: string
+        }
+        Insert: {
+          compact_label: string
+          default_visibility: string
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          max_value?: number | null
+          min_value?: number | null
+          preset_template_id: string
+          sort_order: number
+          value_type: string
+        }
+        Update: {
+          compact_label?: string
+          default_visibility?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          max_value?: number | null
+          min_value?: number | null
+          preset_template_id?: string
+          sort_order?: number
+          value_type?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "quests_status_id_fkey"
-            columns: ["status_id"]
+            foreignKeyName: "quick_stat_preset_fields_preset_template_id_fkey"
+            columns: ["preset_template_id"]
             isOneToOne: false
-            referencedRelation: "status_definitions"
+            referencedRelation: "quick_stat_preset_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quick_stat_preset_templates: {
+        Row: {
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          preset_pack_id: string
+          sort_order: number
+          template_kind: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          preset_pack_id: string
+          sort_order: number
+          template_kind: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          preset_pack_id?: string
+          sort_order?: number
+          template_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quick_stat_preset_templates_preset_pack_id_fkey"
+            columns: ["preset_pack_id"]
+            isOneToOne: false
+            referencedRelation: "option_preset_packs"
             referencedColumns: ["id"]
           },
         ]
@@ -1428,30 +2876,51 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          end_time: string | null
           entity_id: string
+          gm_summary: string | null
+          next_session_teaser: string | null
+          public_summary: string | null
           session_date: string
+          session_number_label: string | null
+          session_number_sort: number | null
+          start_time: string | null
           status_id: string
-          title: string
+          title: string | null
           updated_at: string
           updated_by: string
         }
         Insert: {
           created_at?: string
           created_by: string
+          end_time?: string | null
           entity_id: string
+          gm_summary?: string | null
+          next_session_teaser?: string | null
+          public_summary?: string | null
           session_date: string
+          session_number_label?: string | null
+          session_number_sort?: number | null
+          start_time?: string | null
           status_id: string
-          title: string
+          title?: string | null
           updated_at?: string
           updated_by: string
         }
         Update: {
           created_at?: string
           created_by?: string
+          end_time?: string | null
           entity_id?: string
+          gm_summary?: string | null
+          next_session_teaser?: string | null
+          public_summary?: string | null
           session_date?: string
+          session_number_label?: string | null
+          session_number_sort?: number | null
+          start_time?: string | null
           status_id?: string
-          title?: string
+          title?: string | null
           updated_at?: string
           updated_by?: string
         }
@@ -1534,6 +3003,177 @@ export type Database = {
           },
         ]
       }
+      storylines: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          entity_id: string
+          gm_summary: string | null
+          is_major: boolean
+          palette_color_id: string | null
+          parent_storyline_entity_id: string | null
+          primary_location_entity_id: string | null
+          priority_option_id: string | null
+          public_summary: string | null
+          reward_text: string | null
+          sort_order: number | null
+          status_id: string
+          storyline_category_option_id: string | null
+          storyline_type: string
+          symbol_id: string | null
+          title: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          entity_id: string
+          gm_summary?: string | null
+          is_major?: boolean
+          palette_color_id?: string | null
+          parent_storyline_entity_id?: string | null
+          primary_location_entity_id?: string | null
+          priority_option_id?: string | null
+          public_summary?: string | null
+          reward_text?: string | null
+          sort_order?: number | null
+          status_id: string
+          storyline_category_option_id?: string | null
+          storyline_type: string
+          symbol_id?: string | null
+          title: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          entity_id?: string
+          gm_summary?: string | null
+          is_major?: boolean
+          palette_color_id?: string | null
+          parent_storyline_entity_id?: string | null
+          primary_location_entity_id?: string | null
+          priority_option_id?: string | null
+          public_summary?: string | null
+          reward_text?: string | null
+          sort_order?: number | null
+          status_id?: string
+          storyline_category_option_id?: string | null
+          storyline_type?: string
+          symbol_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storylines_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storylines_palette_color_id_fkey"
+            columns: ["palette_color_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_palette_colors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storylines_parent_storyline_entity_id_fkey"
+            columns: ["parent_storyline_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storylines_primary_location_entity_id_fkey"
+            columns: ["primary_location_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storylines_priority_option_id_fkey"
+            columns: ["priority_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storylines_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "status_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storylines_storyline_category_option_id_fkey"
+            columns: ["storyline_category_option_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storylines_symbol_id_fkey"
+            columns: ["symbol_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_symbols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      symbol_preset_symbols: {
+        Row: {
+          icon_key: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          preset_pack_id: string
+          sort_order: number
+        }
+        Insert: {
+          icon_key: string
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          preset_pack_id: string
+          sort_order: number
+        }
+        Update: {
+          icon_key?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          preset_pack_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "symbol_preset_symbols_icon_key_fkey"
+            columns: ["icon_key"]
+            isOneToOne: false
+            referencedRelation: "app_symbol_icon_keys"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "symbol_preset_symbols_preset_pack_id_fkey"
+            columns: ["preset_pack_id"]
+            isOneToOne: false
+            referencedRelation: "option_preset_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       timeline_events: {
         Row: {
           created_at: string
@@ -1541,8 +3181,13 @@ export type Database = {
           date_expression: string
           entity_id: string
           event_type_option_id: string
+          gm_summary: string | null
+          palette_color_id: string | null
+          primary_location_entity_id: string | null
+          public_summary: string | null
           related_session_entity_id: string | null
           sort_key: string | null
+          symbol_id: string | null
           title: string
           updated_at: string
           updated_by: string
@@ -1553,8 +3198,13 @@ export type Database = {
           date_expression: string
           entity_id: string
           event_type_option_id: string
+          gm_summary?: string | null
+          palette_color_id?: string | null
+          primary_location_entity_id?: string | null
+          public_summary?: string | null
           related_session_entity_id?: string | null
           sort_key?: string | null
+          symbol_id?: string | null
           title: string
           updated_at?: string
           updated_by: string
@@ -1565,8 +3215,13 @@ export type Database = {
           date_expression?: string
           entity_id?: string
           event_type_option_id?: string
+          gm_summary?: string | null
+          palette_color_id?: string | null
+          primary_location_entity_id?: string | null
+          public_summary?: string | null
           related_session_entity_id?: string | null
           sort_key?: string | null
+          symbol_id?: string | null
           title?: string
           updated_at?: string
           updated_by?: string
@@ -1583,7 +3238,21 @@ export type Database = {
             foreignKeyName: "timeline_events_event_type_option_id_fkey"
             columns: ["event_type_option_id"]
             isOneToOne: false
-            referencedRelation: "entity_option_definitions"
+            referencedRelation: "campaign_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_events_palette_color_id_fkey"
+            columns: ["palette_color_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_palette_colors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_events_primary_location_entity_id_fkey"
+            columns: ["primary_location_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
             referencedColumns: ["id"]
           },
           {
@@ -1591,6 +3260,13 @@ export type Database = {
             columns: ["related_session_entity_id"]
             isOneToOne: false
             referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_events_symbol_id_fkey"
+            columns: ["symbol_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_symbols"
             referencedColumns: ["id"]
           },
         ]
@@ -1694,15 +3370,17 @@ export type Database = {
           primary_image_thumb_height: number | null
           primary_image_thumb_path: string | null
           primary_image_thumb_width: number | null
-          quest_priority_label: string | null
-          related_plot_arc_entity_id: string | null
-          related_plot_arc_label: string | null
           related_session_entity_id: string | null
           related_session_label: string | null
+          related_storyline_entity_id: string | null
+          related_storyline_label: string | null
           relevant_date: string | null
           sort_key: string | null
           status_key: string | null
           status_label: string | null
+          storyline_category_label: string | null
+          storyline_priority_label: string | null
+          storyline_type: string | null
           timeline_date_expression: string | null
           timeline_event_type_label: string | null
           updated_at: string | null
@@ -1711,6 +3389,7 @@ export type Database = {
       }
     }
     Functions: {
+      can_edit_entity_core: { Args: { p_entity_id: string }; Returns: boolean }
       can_mutate_campaign_config: {
         Args: { campaign_id: string }
         Returns: boolean
@@ -1719,14 +3398,26 @@ export type Database = {
         Args: { p_entity_id: string }
         Returns: boolean
       }
+      can_view_entity_visibility: {
+        Args: {
+          p_campaign_id: string
+          p_created_by: string
+          p_entity_id?: string
+          p_visibility: string
+        }
+        Returns: boolean
+      }
       can_view_gm_content: { Args: { campaign_id: string }; Returns: boolean }
       create_campaign: {
         Args: {
           p_description?: string
           p_end_date?: string
           p_name: string
+          p_preset_pack_key?: string
           p_start_date: string
           p_status_key?: string
+          p_timezone?: string
+          p_vtt_url?: string
         }
         Returns: {
           campaign_id: string
@@ -1795,18 +3486,65 @@ export type Database = {
           primary_image_thumb_height: number
           primary_image_thumb_path: string
           primary_image_thumb_width: number
-          quest_priority_label: string
-          related_plot_arc_entity_id: string
-          related_plot_arc_label: string
           related_session_entity_id: string
           related_session_label: string
+          related_storyline_entity_id: string
+          related_storyline_label: string
           relevant_date: string
           sort_key: string
           status_key: string
           status_label: string
+          storyline_category_label: string
+          storyline_priority_label: string
+          storyline_type: string
           timeline_date_expression: string
           timeline_event_type_label: string
           updated_at: string
+        }[]
+      }
+      get_character_hooks: {
+        Args: { p_character_entity_id: string }
+        Returns: {
+          category_label: string | null
+          category_option_id: string | null
+          description_text: string
+          gm_note_text: string | null
+          id: string
+          promoted_storyline_entity_id: string | null
+          promoted_storyline_label: string | null
+          sort_order: number
+          status_key: string
+          status_label: string
+          updated_at: string
+          visibility: string
+        }[]
+      }
+      get_entity_quick_stats: {
+        Args: { p_entity_id: string }
+        Returns: {
+          compact_label: string
+          field_id: string
+          field_key: string
+          label: string
+          sort_order: number
+          value_id: string | null
+          value_number: number | null
+          value_text: string | null
+          visibility: string
+          value_type: string
+        }[]
+      }
+      get_encounter_statblocks: {
+        Args: { p_encounter_entity_id: string }
+        Returns: {
+          id: string
+          instances: Json
+          label: string
+          linked_npc_entity_id: string | null
+          linked_npc_label: string | null
+          quantity: number
+          sort_order: number
+          values: Json
         }[]
       }
       get_campaign_membership_summary: {
@@ -1816,6 +3554,50 @@ export type Database = {
           membership_status: string
           role_keys: string[]
           user_id: string
+        }[]
+      }
+      get_campaign_options: {
+        Args: {
+          p_campaign_id: string
+          p_group_key?: string
+          p_include_inactive?: boolean
+        }
+        Returns: {
+          default_palette_color_id: string
+          default_palette_color_token: string
+          default_symbol_icon_key: string
+          default_symbol_id: string
+          description: string
+          group_id: string
+          group_key: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+        }[]
+      }
+      get_campaign_palette_colors: {
+        Args: { p_campaign_id: string; p_include_inactive?: boolean }
+        Returns: {
+          color_token: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+          text_color_token: string
+        }[]
+      }
+      get_campaign_symbols: {
+        Args: { p_campaign_id: string; p_include_inactive?: boolean }
+        Returns: {
+          icon_key: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
         }[]
       }
       get_entity_detail: {
@@ -1837,34 +3619,35 @@ export type Database = {
           npc_real_status_label: string
           parent_entity_id: string
           parent_entity_label: string
-          quest_priority_label: string
-          related_plot_arc_entity_id: string
-          related_plot_arc_label: string
           related_session_entity_id: string
           related_session_label: string
+          related_storyline_entity_id: string
+          related_storyline_label: string
           relevant_date: string
           sections: Json
           sort_key: string
           status_key: string
           status_label: string
+          storyline_category_label: string
+          storyline_priority_label: string
+          storyline_type: string
           timeline_date_expression: string
           timeline_event_type_label: string
+          typed_data: Json
           updated_at: string
         }[]
       }
-      get_entity_option_definitions: {
-        Args: {
-          p_campaign_id: string
-          p_entity_type_key: string
-          p_group_key?: string
-        }
+      promote_character_hook_to_storyline: {
+        Args: { p_hook_id: string; p_visibility?: string }
         Returns: {
+          campaign_id: string
+          default_visibility: string
+          entity_id: string
           entity_type_key: string
-          group_key: string
-          id: string
-          key: string
-          label: string
-          sort_order: number
+          list_caption: string
+          status_key: string
+          status_label: string
+          updated_at: string
         }[]
       }
       get_entity_status_options: {
@@ -1933,6 +3716,21 @@ export type Database = {
         Args: { campaign_id: string; role_key: string }
         Returns: boolean
       }
+      import_campaign_preset_pack: {
+        Args: {
+          p_campaign_id: string
+          p_group_keys?: string[]
+          p_preset_pack_key?: string
+        }
+        Returns: {
+          option_groups_imported: number
+          options_imported: number
+          palette_colors_imported: number
+          quick_stat_fields_imported: number
+          quick_stat_templates_imported: number
+          symbols_imported: number
+        }[]
+      }
       is_campaign_gm: { Args: { campaign_id: string }; Returns: boolean }
       is_campaign_member: { Args: { campaign_id: string }; Returns: boolean }
       is_campaign_owner: { Args: { campaign_id: string }; Returns: boolean }
@@ -1946,13 +3744,31 @@ export type Database = {
         }
         Returns: string
       }
-      require_entity_option: {
+      require_campaign_option: {
         Args: {
           p_campaign_id: string
-          p_entity_type_id: string
           p_group_key: string
           p_option_id: string
+          p_require_active?: boolean
           p_required?: boolean
+        }
+        Returns: string
+      }
+      require_campaign_palette_color: {
+        Args: {
+          p_campaign_id: string
+          p_palette_color_id: string
+          p_require_active?: boolean
+          p_required?: boolean
+        }
+        Returns: string
+      }
+      require_campaign_symbol: {
+        Args: {
+          p_campaign_id: string
+          p_require_active?: boolean
+          p_required?: boolean
+          p_symbol_id: string
         }
         Returns: string
       }
@@ -2097,4 +3913,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

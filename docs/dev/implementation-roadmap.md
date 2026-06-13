@@ -60,9 +60,9 @@ Implement explicit relationships, structural related-record views, relationship 
 
 This milestone turns isolated records into navigable campaign knowledge.
 
-### 08. Sessions, Quests, Encounters, Plot Arcs, And Activity
+### 08. Sessions, Storylines, Encounters, And Activity
 
-Build the session workflow, quest log, lightweight encounters, plot arcs, attendance, role-aware recent activity, session note surfaces, and session-oriented context.
+Build the session workflow, Storyline list, lightweight encounters, attendance, role-aware recent activity, session note surfaces, and session-oriented context.
 
 This milestone supports preparation and post-session campaign maintenance.
 

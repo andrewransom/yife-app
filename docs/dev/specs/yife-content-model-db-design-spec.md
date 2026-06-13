@@ -30,6 +30,7 @@ Visibility values:
 - `shared`: visible to campaign members who can view the parent/attached record.
 - `gm_only`: visible to campaign owners and members with the Game Master role.
 - `private`: visible only to the author/creator.
+- `character_owner_gm`: visible only to the Character controlling user plus campaign owners and Game Masters. Use only for character-attached data with an explicit controlling user.
 
 Edit policy values:
 
@@ -51,6 +52,7 @@ campaign_entities
 - entity_type_id
 - list_caption
 - default_visibility
+- core_edit_policy
 - created_by
 - updated_by
 - created_at
@@ -67,6 +69,7 @@ Notes:
 - Normal app views exclude deleted entities.
 - Campaign-owner "empty trash" hard-deletes soft-deleted entities and cascades dependent data.
 - `default_visibility` is the record-level default used by summaries, directories, and newly created sections unless a more specific section/note/relationship visibility applies.
+- `core_edit_policy` controls structured/core field editability. Helpers/RPCs must evaluate campaign owner, Game Master, creator, Character controlling user, and ordinary player separately.
 
 ## Entity Type Configuration
 
@@ -114,9 +117,8 @@ Initial system entity types:
 - party
 - faction
 - location
-- quest
+- storyline
 - session
-- plot_arc
 - encounter
 - timeline_event
 
@@ -137,9 +139,50 @@ characters
 - status_id
 - controlling_user_id
 - image_asset_id
+- species_ancestry_text nullable
+- pronouns nullable
+- public_summary nullable
+- gm_summary nullable
+- character_sheet_url nullable
 ```
 
 Character backstory, public description, and private notes use `entity_sections`.
+
+```text
+character_class_progressions
+- id
+- campaign_id
+- character_entity_id fk -> campaign_entities.id
+- class_name
+- subclass_name nullable
+- level_number
+- sort_order
+- created_by
+- updated_by
+- created_at
+- updated_at
+```
+
+```text
+character_hooks
+- id
+- campaign_id
+- character_entity_id fk -> campaign_entities.id
+- description_text
+- status_id
+- category_option_id nullable
+- visibility
+- gm_note_text nullable
+- promoted_storyline_entity_id nullable
+- sort_order
+- created_by
+- updated_by
+- created_at
+- updated_at
+- deleted_at nullable
+```
+
+Character hook promotion creates or returns one linked Storyline transactionally and must not copy `gm_note_text` into player-visible fields.
 
 ### NPCs
 
@@ -151,6 +194,18 @@ npcs
 - real_status_id
 - faction_entity_id nullable
 - image_asset_id
+- role_option_id nullable
+- role_label nullable
+- speech_text nullable
+- party_disposition_option_id nullable
+- relationship_to_party_text nullable
+- public_summary nullable
+- gm_summary nullable
+- public_current_location_entity_id nullable
+- gm_current_location_entity_id nullable
+- public_home_location_entity_id nullable
+- gm_home_location_entity_id nullable
+- reports_to_entity_id nullable
 - stat_block_jsonb nullable
 ```
 
@@ -167,6 +222,13 @@ Notes:
 parties
 - entity_id pk/fk -> campaign_entities.id
 - name
+- status_id
+- public_summary nullable
+- gm_summary nullable
+- home_location_entity_id nullable
+- current_location_entity_id nullable
+- palette_color_id nullable
+- symbol_id nullable
 ```
 
 Party description and notes use `entity_sections`.
@@ -178,6 +240,7 @@ party_members
 - party_entity_id fk -> campaign_entities.id
 - character_entity_id fk -> campaign_entities.id
 - role_label nullable
+- is_active
 - sort_order
 - created_by
 - updated_by
@@ -199,6 +262,26 @@ factions
 - name
 - status_id nullable
 - parent_faction_entity_id nullable fk -> campaign_entities.id
+- faction_type_option_id nullable
+- scope_option_id nullable
+- scope_visibility
+- numbers_text nullable
+- numbers_visibility
+- public_summary nullable
+- gm_summary nullable
+- party_disposition_option_id nullable
+- relationship_to_party_text nullable
+- headquarters_location_entity_id nullable
+- headquarters_visibility
+- territory_location_entity_id nullable
+- territory_visibility
+- leader_entity_id nullable
+- leader_visibility
+- public_goal_text nullable
+- gm_true_goal_text nullable
+- symbol_image_asset_id nullable
+- palette_color_id nullable
+- symbol_id nullable
 ```
 
 Faction description, relationship summary, GM notes, and player-facing details use `entity_sections`.
@@ -213,23 +296,58 @@ locations
 - status_id nullable
 - parent_location_entity_id nullable fk -> campaign_entities.id
 - image_asset_id nullable
+- public_summary nullable
+- gm_summary nullable
+- known_to_party
+- visited_by_party
+- relationship_to_party_text nullable
+- party_disposition_option_id nullable
+- controlling_faction_entity_id nullable
+- controlling_faction_visibility
+- owner_or_steward_entity_id nullable
+- owner_or_steward_visibility
+- ruler_or_authority_entity_id nullable
+- ruler_or_authority_visibility
+- population_text nullable
+- population_visibility
+- size_or_scale_text nullable
+- size_or_scale_visibility
+- terrain_option_id nullable
+- danger_level_option_id nullable
+- danger_level_visibility
+- accessibility_option_id nullable
+- accessibility_visibility
+- map_image_asset_id nullable
+- symbol_image_asset_id nullable
+- palette_color_id nullable
+- symbol_id nullable
 ```
 
 Location descriptions, maps notes, GM-only details, and player-facing summaries use `entity_sections`.
 
-### Quests
+### Storylines
 
 ```text
-quests
+storylines
 - entity_id pk/fk -> campaign_entities.id
 - title
+- storyline_type -- quest | thread
 - status_id
 - priority_option_id nullable
 - is_major
-- parent_quest_entity_id nullable fk -> campaign_entities.id
+- parent_storyline_entity_id nullable fk -> campaign_entities.id
+- storyline_category_option_id nullable
+- public_summary nullable
+- gm_summary nullable
+- primary_location_entity_id nullable
+- reward_text nullable
+- completed_at nullable
+- sort_order nullable
+- palette_color_id nullable
+- symbol_id nullable
 ```
 
-Quest public summary, GM details, clues, private notes, and player-facing log content use `entity_sections`.
+Storylines replace top-level quests and plot arcs. A quest is a Storyline with `storyline_type = quest`; a narrative thread is `storyline_type = thread`; a plot arc is a major parent Storyline. Public details, GM details, clues, private notes, and player-facing log content use `entity_sections`.
 
 ### Sessions
 
@@ -238,37 +356,84 @@ sessions
 - entity_id pk/fk -> campaign_entities.id
 - title
 - session_date
+- session_number_sort nullable
+- session_number_label nullable
+- start_time nullable
+- end_time nullable
 - status_id
+- public_summary nullable
+- gm_summary nullable
+- next_session_teaser nullable
 ```
 
 Session summaries, prep notes, recap notes, and GM-private notes use `entity_sections` and `notes`.
 
 Attendance is tracked separately.
 
-### Plot Arcs
-
-```text
-plot_arcs
-- entity_id pk/fk -> campaign_entities.id
-- title
-- status_id
-```
-
-Plot arcs are GM-facing by default. Arc descriptions, planning notes, and outcomes use `entity_sections`.
-
 ### Encounters
 
 ```text
 encounters
 - entity_id pk/fk -> campaign_entities.id
-- title
+- title nullable
 - encounter_type_option_id
 - status_id
 - related_session_entity_id nullable fk -> campaign_entities.id
-- related_plot_arc_entity_id nullable fk -> campaign_entities.id
+- related_storyline_entity_id nullable fk -> campaign_entities.id
+- difficulty_option_id nullable
+- sort_order nullable
+- palette_color_id nullable
+- image_asset_id nullable
 ```
 
 Encounter descriptions, tactical notes, outcomes, and GM-only prep use `entity_sections`.
+
+```text
+encounter_statblocks
+- id
+- campaign_id
+- encounter_entity_id fk -> campaign_entities.id
+- linked_npc_entity_id nullable
+- label
+- quantity
+- sort_order
+- created_by
+- updated_by
+- created_at
+- updated_at
+- deleted_at nullable
+```
+
+```text
+encounter_statblock_values
+- id
+- campaign_id
+- encounter_statblock_id fk -> encounter_statblocks.id
+- field_id fk -> campaign_quick_stat_fields.id
+- value_number nullable
+- value_text nullable
+- created_by
+- updated_by
+- created_at
+- updated_at
+```
+
+```text
+encounter_statblock_instances
+- id
+- campaign_id
+- encounter_statblock_id fk -> encounter_statblocks.id
+- label nullable
+- current_hp nullable
+- max_hp_override nullable
+- is_defeated
+- sort_order
+- created_by
+- updated_by
+- created_at
+- updated_at
+- deleted_at nullable
+```
 
 ### Timeline Events
 
@@ -280,6 +445,11 @@ timeline_events
 - sort_key nullable
 - event_type_option_id
 - related_session_entity_id nullable fk -> campaign_entities.id
+- public_summary nullable
+- gm_summary nullable
+- primary_location_entity_id nullable
+- palette_color_id nullable
+- symbol_id nullable
 ```
 
 Timeline event descriptions and GM-private detail use `entity_sections`.
@@ -298,7 +468,7 @@ This includes:
 - player contribution sections
 - backstories
 - session summaries
-- quest details
+- Storyline details
 - location descriptions
 - encounter notes
 
@@ -410,28 +580,18 @@ entity_section_definitions
 
 Initial section sets should be seeded by migration.
 
-Example NPC sections:
+Initial MVP section sets:
 
 ```text
-player_summary
-gm_details
-player_observations
-```
-
-Example quest sections:
-
-```text
-player_summary
-gm_details
-player_observations
-```
-
-Example session sections:
-
-```text
-summary
-gm_prep
-gm_private_notes
+character: details, backstory, gm_notes, journal
+npc: details, gm_details
+party: details, gm_notes
+faction: details, gm_details
+location: details, gm_details
+storyline: details, gm_details
+session: session_notes, gm_prep, gm_private_notes
+encounter: gm_prep, outcomes
+timeline_event: details, gm_details
 ```
 
 Custom sections are post-MVP.
@@ -535,9 +695,10 @@ Structural relationships stay in typed columns and are not mirrored into `entity
 Examples:
 
 - `locations.parent_location_entity_id`
-- `quests.parent_quest_entity_id`
+- `storylines.parent_storyline_entity_id`
 - `factions.parent_faction_entity_id`
 - `encounters.related_session_entity_id`
+- `encounters.related_storyline_entity_id`
 - `timeline_events.related_session_entity_id`
 
 A read-only related-records view should union explicit relationships with typed structural links.
@@ -632,53 +793,225 @@ Rules:
 Initial system status keys:
 
 - campaign: `planned`, `active`, `paused`, `completed`, `archived`
-- character: `active`, `inactive`, `dead`, `retired`, `missing`
+- character: `active`, `retired`, `dead`, `missing`, `inactive`
+- character hook: `unused`, `seeded`, `active`, `resolved`, `retired`
+- party: `active`, `inactive`, `disbanded`, `former`, `temporary`
 - npc apparent/real status: `alive`, `dead`, `missing`, `unknown`, `inactive`
-- quest: `open`, `in_progress`, `completed`, `failed`, `abandoned`, `hidden`
+- faction: `active`, `inactive`, `collapsed`, `unknown`
+- location: `active`, `ruined`, `abandoned`, `destroyed`, `unknown`
+- storyline: `open`, `active`, `completed`, `resolved`, `failed`, `abandoned`
 - session: `planned`, `completed`, `cancelled`
-- plot arc: `planned`, `active`, `resolved`, `abandoned`, `hidden`
 - encounter: `planned`, `ready`, `completed`, `skipped`, `archived`
 - resource: `active`, `inactive`, `lost`, `consumed`, `archived`
 
-Open/configurable lists use a generalized option table.
+Statuses are fixed seeded system lists in MVP. Hiddenness is visibility, not a status.
+
+Open/configurable non-status lists use campaign-owned option groups and options copied from presets.
 
 ```text
-entity_option_definitions
+campaign_option_groups
 - id
-- entity_type_id nullable fk -> entity_types.id
-- campaign_id nullable
-- group_key
+- campaign_id
 - key
 - label
+- description nullable
 - sort_order
-- is_system
 - is_active
-- created_by nullable
-- updated_by nullable
+- created_by
+- updated_by
 - created_at
 - updated_at
 ```
 
-Use this for:
+```text
+campaign_options
+- id
+- campaign_id
+- group_id
+- key
+- label
+- description nullable
+- default_palette_color_id nullable
+- default_symbol_id nullable
+- sort_order
+- is_active
+- source_preset_pack_id nullable
+- source_preset_group_id nullable
+- source_preset_item_id nullable
+- created_by
+- updated_by
+- created_at
+- updated_at
+```
 
-- location types
-- timeline event types
-- encounter types
-- quest priority/importance
-- other small open lists
+```text
+option_preset_packs
+- id
+- key
+- label
+- description nullable
+- sort_order
+- is_system
+- is_active
+- created_at
+- updated_at
+```
+
+```text
+option_preset_groups
+- id
+- preset_pack_id
+- group_key
+- label
+- description nullable
+- sort_order
+- is_active
+```
+
+```text
+option_preset_items
+- id
+- preset_group_id
+- key
+- label
+- description nullable
+- default_palette_color_key nullable
+- default_symbol_key nullable
+- sort_order
+- is_active
+```
+
+Use campaign options for:
+
+- NPC role.
+- Party disposition.
+- Hook category.
+- Faction type.
+- Faction scope.
+- Location type.
+- Location terrain/environment.
+- Location danger level.
+- Location accessibility.
+- Location party disposition.
+- Storyline category.
+- Storyline priority.
+- Encounter type.
+- Encounter difficulty.
+- Timeline event type.
 
 Rules:
 
-- `campaign_id null` means system default.
-- Non-null `campaign_id` means campaign custom.
-- MVP customization UI is only required for currencies.
+- Campaign option group keys are unique per campaign.
+- Campaign option keys are unique per group.
+- Create/update RPCs must reject options from the wrong campaign, wrong group, or inactive rows for new selections.
+- Existing records may continue to display deactivated options they already reference.
+- Preset import copies selected preset options into campaign-owned option rows and keeps source references.
+- Preset import copies palette colors and symbols before options so option default references map only to campaign-owned rows.
 
 Initial system option keys:
 
 - location type: `world`, `continent`, `country`, `region`, `town`, `city`, `wilderness_area`, `district`, `landmark`, `building`, `room`, `dungeon`, `plane`, `other`
-- timeline event type: `world_history`, `campaign_event`, `session_event`, `character_event`, `faction_event`, `location_event`, `quest_event`, `omen_prophecy`, `other`
+- timeline event type: `world_history`, `campaign_event`, `session_event`, `character_event`, `faction_event`, `location_event`, `storyline_event`, `omen_prophecy`, `other`
 - encounter type: `roleplay`, `exploration`, `combat`, `puzzle`, `travel`, `mixed`, `other`
-- quest priority: `low`, `normal`, `high`, `urgent`
+- storyline priority: `low`, `normal`, `high`, `urgent`
+
+Campaign palette colors use dedicated rows, not arbitrary per-record hex.
+
+```text
+campaign_palette_colors
+- id
+- campaign_id
+- key
+- label
+- color_token
+- text_color_token nullable
+- sort_order
+- is_active
+- source_preset_pack_id nullable
+- source_preset_color_id nullable
+- created_by
+- updated_by
+- created_at
+- updated_at
+```
+
+Campaign symbols use dedicated rows constrained to known app icon keys.
+
+```text
+campaign_symbols
+- id
+- campaign_id
+- key
+- label
+- icon_key
+- sort_order
+- is_active
+- source_preset_pack_id nullable
+- source_preset_symbol_id nullable
+- created_by
+- updated_by
+- created_at
+- updated_at
+```
+
+Quick stat templates and values are campaign-owned and row-per-field.
+
+```text
+campaign_quick_stat_templates
+- id
+- campaign_id
+- template_kind -- character | npc_statblock
+- label
+- is_active
+- source_preset_template_id nullable
+- created_by
+- updated_by
+- created_at
+- updated_at
+```
+
+```text
+campaign_quick_stat_fields
+- id
+- campaign_id
+- template_id
+- key
+- label
+- compact_label
+- value_type -- number | text
+- default_visibility
+- min_value nullable
+- max_value nullable
+- sort_order
+- is_active
+- created_by
+- updated_by
+- created_at
+- updated_at
+```
+
+```text
+entity_quick_stat_values
+- id
+- campaign_id
+- entity_id
+- field_id
+- value_number nullable
+- value_text nullable
+- visibility
+- created_by
+- updated_by
+- created_at
+- updated_at
+```
+
+Rules:
+
+- One active template per `template_kind` per campaign is enforced for MVP.
+- Values must match field value type; number fields use `value_number`, text fields use `value_text`, and the other value column stays null.
+- Unique constraints prevent duplicate value rows for the same entity/field and encounter statblock/field.
+- Character quick stats default to `character_owner_gm`.
+- NPC and Encounter statblocks are GM-only in MVP.
 
 ## Users And Settings
 
@@ -757,6 +1090,8 @@ campaigns
 - name
 - description nullable
 - status_id
+- vtt_url nullable
+- timezone
 - start_date
 - end_date nullable
 - image_asset_id nullable
@@ -877,6 +1212,7 @@ media_asset_links
 - note_id nullable fk -> notes.id
 - section_id nullable fk -> entity_sections.id
 - link_role
+- visibility
 - sort_order
 - created_by
 - created_at
@@ -888,7 +1224,7 @@ Rules:
 - Campaign, character, NPC, and location primary images must reference same-campaign media assets.
 - User profile avatar assets, if implemented, use `asset_scope = user_profile`, `campaign_id = null`, and `owner_user_id` matching the profile user.
 - MVP primary images are player-visible when the parent campaign/entity is visible.
-- GM-private or spoiler images for otherwise player-visible records are deferred until media links support visibility or private media is promoted.
+- GM-private or spoiler images for otherwise player-visible records require media links with visibility. Private media storage remains deferred.
 - Public URLs must not be stored in media tables or summary views.
 
 ## Funds And Resources
@@ -1355,7 +1691,8 @@ The following are intentionally deferred:
 - Semantic/vector search.
 - Full revision history and historical content snapshots.
 - Custom section UI.
-- Custom status/relationship/option UI, except currencies.
+- Custom status and relationship type UI.
+- Global/reusable option preset authoring UI beyond campaign-owned option management.
 - Import/export.
 - Advanced inventory/accounting ledger.
 - Real-time collaborative rich text.

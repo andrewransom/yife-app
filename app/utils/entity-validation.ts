@@ -14,6 +14,7 @@ export const createEntityBaseSchema = z.object({
   priorityOptionId: optionalUuid,
   encounterTypeOptionId: optionalUuid,
   eventTypeOptionId: optionalUuid,
+  storylineType: z.enum(['quest', 'thread']).optional(),
   sessionDate: z.string().optional(),
   dateExpression: z.string().trim().optional(),
   sortKey: z.string().trim().optional(),
@@ -34,7 +35,7 @@ export function validateCreateEntityInput(input: CreateEntityFormInput) {
   }
 
   if (
-    ['character', 'quest', 'session', 'plot_arc', 'encounter'].includes(parsed.entityTypeKey) &&
+    ['character', 'storyline', 'session', 'encounter'].includes(parsed.entityTypeKey) &&
     !parsed.statusId
   ) {
     throw new Error('Status is required.');
@@ -84,6 +85,7 @@ export function toCreateEntityRpcInput(input: CreateEntityFormOutput) {
     priority_option_id: input.priorityOptionId || undefined,
     encounter_type_option_id: input.encounterTypeOptionId || undefined,
     event_type_option_id: input.eventTypeOptionId || undefined,
+    storyline_type: input.storylineType || undefined,
     session_date: input.sessionDate || undefined,
     date_expression: input.dateExpression || undefined,
     sort_key: input.sortKey || undefined,

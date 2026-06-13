@@ -5,8 +5,8 @@ import { computed, watch, ref } from 'vue';
 import { Save } from 'lucide-vue-next';
 import { useCurrentUser } from '~/composables/auth/useCurrentUser';
 import { useCampaignMemberProfilesQuery } from '~/composables/campaigns/useCampaignMemberProfilesQuery';
+import { useCampaignOptionsQuery } from '~/composables/entities/useCampaignOptionsQuery';
 import { useCreateEntityMutation } from '~/composables/entities/useCreateEntityMutation';
-import { useEntityOptionDefinitionsQuery } from '~/composables/entities/useEntityOptionDefinitionsQuery';
 import { useEntityStatusOptionsQuery } from '~/composables/entities/useEntityStatusOptionsQuery';
 import type { EntityTypeOption } from '~/composables/entities/types';
 import {
@@ -40,14 +40,14 @@ const isNameType = computed(() =>
   ['character', 'npc', 'party', 'faction', 'location'].includes(entityTypeKey.value),
 );
 const requiresStatus = computed(() =>
-  ['character', 'quest', 'session', 'plot_arc', 'encounter'].includes(entityTypeKey.value),
+  ['character', 'storyline', 'session', 'encounter'].includes(entityTypeKey.value),
 );
 const optionGroupKey = computed(() => {
   if (entityTypeKey.value === 'location') {
     return 'location_type';
   }
-  if (entityTypeKey.value === 'quest') {
-    return 'quest_priority';
+  if (entityTypeKey.value === 'storyline') {
+    return 'storyline_priority';
   }
   if (entityTypeKey.value === 'encounter') {
     return 'encounter_type';
@@ -61,9 +61,8 @@ const optionGroupKey = computed(() => {
 const statusesQuery = useEntityStatusOptionsQuery(props.campaignId, entityTypeKey, {
   enabled: computed(() => Boolean(entityTypeKey.value)),
 });
-const optionsQuery = useEntityOptionDefinitionsQuery(
+const optionsQuery = useCampaignOptionsQuery(
   props.campaignId,
-  entityTypeKey,
   optionGroupKey,
   {
     enabled: computed(() => Boolean(optionGroupKey.value)),
@@ -93,6 +92,7 @@ const { defineField, errors, handleSubmit, resetForm, setFieldValue } =
       priorityOptionId: '',
       encounterTypeOptionId: '',
       eventTypeOptionId: '',
+      storylineType: 'quest',
       sessionDate: '',
       dateExpression: '',
       sortKey: '',
@@ -110,6 +110,7 @@ const [locationTypeOptionId, locationTypeAttrs] = defineField('locationTypeOptio
 const [priorityOptionId, priorityAttrs] = defineField('priorityOptionId');
 const [encounterTypeOptionId, encounterTypeAttrs] = defineField('encounterTypeOptionId');
 const [eventTypeOptionId, eventTypeAttrs] = defineField('eventTypeOptionId');
+const [storylineType, storylineTypeAttrs] = defineField('storylineType');
 const [sessionDate, sessionDateAttrs] = defineField('sessionDate');
 const [dateExpression, dateExpressionAttrs] = defineField('dateExpression');
 const [sortKey, sortKeyAttrs] = defineField('sortKey');
@@ -152,6 +153,8 @@ watch(
     }
     if (entityTypeKey.value === 'location' && !locationTypeOptionId.value) {
       locationTypeOptionId.value = firstOption;
+    } else if (entityTypeKey.value === 'storyline' && !priorityOptionId.value) {
+      priorityOptionId.value = firstOption;
     } else if (entityTypeKey.value === 'encounter' && !encounterTypeOptionId.value) {
       encounterTypeOptionId.value = firstOption;
     } else if (entityTypeKey.value === 'timeline_event' && !eventTypeOptionId.value) {
@@ -197,32 +200,34 @@ const onSubmit = handleSubmit(async (values) => {
 
 <template>
   <form class="space-y-3" @submit="onSubmit">
-    <YFormField label="Type" name="entityTypeKey">
-      <select
-        v-model="entityTypeKey"
-        aria-label="Entity type"
-        class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
-      >
-        <option value="" disabled>Select type</option>
-        <option
-          v-for="type in entityTypes.filter((item) => item.can_create)"
-          :key="type.entity_type_key"
-          :value="type.entity_type_key"
+    <div class="grid gap-3 md:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">
+      <YFormField label="Type" name="entityTypeKey">
+        <select
+          v-model="entityTypeKey"
+          aria-label="Entity type"
+          class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
         >
-          {{ type.label }}
-        </option>
-      </select>
-    </YFormField>
+          <option value="" disabled>Select type</option>
+          <option
+            v-for="type in entityTypes.filter((item) => item.can_create)"
+            :key="type.entity_type_key"
+            :value="type.entity_type_key"
+          >
+            {{ type.label }}
+          </option>
+        </select>
+      </YFormField>
 
-    <YFormField v-if="isNameType" label="Name" name="name">
-      <UInput v-model="name" v-bind="nameAttrs" size="sm" autocomplete="off" />
-      <p v-if="errors.name" class="mt-1 text-xs text-[var(--yife-error)]">{{ errors.name }}</p>
-    </YFormField>
+      <YFormField v-if="isNameType" label="Name" name="name">
+        <UInput v-model="name" v-bind="nameAttrs" size="sm" autocomplete="off" />
+        <p v-if="errors.name" class="mt-1 text-xs text-[var(--yife-error)]">{{ errors.name }}</p>
+      </YFormField>
 
-    <YFormField v-else label="Title" name="title">
-      <UInput v-model="title" v-bind="titleAttrs" size="sm" autocomplete="off" />
-      <p v-if="errors.title" class="mt-1 text-xs text-[var(--yife-error)]">{{ errors.title }}</p>
-    </YFormField>
+      <YFormField v-else label="Title" name="title">
+        <UInput v-model="title" v-bind="titleAttrs" size="sm" autocomplete="off" />
+        <p v-if="errors.title" class="mt-1 text-xs text-[var(--yife-error)]">{{ errors.title }}</p>
+      </YFormField>
+    </div>
 
     <div v-if="entityTypeKey === 'character'" class="grid gap-3 sm:grid-cols-2">
       <YFormField label="Status" name="statusId">
@@ -278,73 +283,89 @@ const onSubmit = handleSubmit(async (values) => {
       </YFormField>
     </div>
 
-    <YFormField v-else-if="statuses.length" label="Status" name="statusId">
-      <select
-        v-model="statusId"
-        v-bind="statusAttrs"
-        class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
-      >
-        <option :value="requiresStatus ? '' : ''" :disabled="requiresStatus">Status</option>
-        <option v-for="status in statuses" :key="status.id" :value="status.id">
-          {{ status.label }}
-        </option>
-      </select>
-    </YFormField>
+    <div v-else-if="statuses.length || entityTypeKey === 'location'" class="grid gap-3 md:grid-cols-2">
+      <YFormField v-if="statuses.length" label="Status" name="statusId">
+        <select
+          v-model="statusId"
+          v-bind="statusAttrs"
+          class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
+        >
+          <option :value="requiresStatus ? '' : ''" :disabled="requiresStatus">Status</option>
+          <option v-for="status in statuses" :key="status.id" :value="status.id">
+            {{ status.label }}
+          </option>
+        </select>
+      </YFormField>
 
-    <YFormField
-      v-if="entityTypeKey === 'location'"
-      label="Location type"
-      name="locationTypeOptionId"
-    >
-      <select
-        v-model="locationTypeOptionId"
-        v-bind="locationTypeAttrs"
-        class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
+      <YFormField
+        v-if="entityTypeKey === 'location'"
+        label="Location type"
+        name="locationTypeOptionId"
       >
-        <option value="" disabled>Type</option>
-        <option v-for="option in options" :key="option.id" :value="option.id">
-          {{ option.label }}
-        </option>
-      </select>
-    </YFormField>
+        <select
+          v-model="locationTypeOptionId"
+          v-bind="locationTypeAttrs"
+          class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
+        >
+          <option value="" disabled>Type</option>
+          <option v-for="option in options" :key="option.id" :value="option.id">
+            {{ option.label }}
+          </option>
+        </select>
+      </YFormField>
+    </div>
 
-    <YFormField v-if="entityTypeKey === 'quest'" label="Priority" name="priorityOptionId">
-      <select
-        v-model="priorityOptionId"
-        v-bind="priorityAttrs"
-        class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
-      >
-        <option value="">No priority</option>
-        <option v-for="option in options" :key="option.id" :value="option.id">
-          {{ option.label }}
-        </option>
-      </select>
-      <label class="mt-2 flex items-center gap-2 text-sm">
+    <div v-if="entityTypeKey === 'storyline'" class="grid gap-3 sm:grid-cols-2">
+      <YFormField label="Storyline type" name="storylineType">
+        <select
+          v-model="storylineType"
+          v-bind="storylineTypeAttrs"
+          class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
+        >
+          <option value="quest">Quest</option>
+          <option value="thread">Thread</option>
+        </select>
+      </YFormField>
+      <YFormField label="Priority" name="priorityOptionId">
+        <select
+          v-model="priorityOptionId"
+          v-bind="priorityAttrs"
+          class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
+        >
+          <option value="">No priority</option>
+          <option v-for="option in options" :key="option.id" :value="option.id">
+            {{ option.label }}
+          </option>
+        </select>
+      </YFormField>
+      <label class="flex items-center gap-2 text-sm sm:col-span-2">
         <input v-model="isMajor" type="checkbox" class="size-4" />
-        Major quest
+        Major storyline
       </label>
-    </YFormField>
+    </div>
 
-    <YFormField v-if="entityTypeKey === 'session'" label="Session date" name="sessionDate">
-      <UInput v-model="sessionDate" v-bind="sessionDateAttrs" type="date" size="sm" />
-    </YFormField>
+    <div class="grid gap-3 md:grid-cols-2">
+      <YFormField v-if="entityTypeKey === 'session'" label="Session date" name="sessionDate">
+        <UInput v-model="sessionDate" v-bind="sessionDateAttrs" type="date" size="sm" />
+      </YFormField>
 
-    <YFormField
-      v-if="entityTypeKey === 'encounter'"
-      label="Encounter type"
-      name="encounterTypeOptionId"
-    >
-      <select
-        v-model="encounterTypeOptionId"
-        v-bind="encounterTypeAttrs"
-        class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
+      <YFormField
+        v-if="entityTypeKey === 'encounter'"
+        label="Encounter type"
+        name="encounterTypeOptionId"
       >
-        <option value="" disabled>Type</option>
-        <option v-for="option in options" :key="option.id" :value="option.id">
-          {{ option.label }}
-        </option>
-      </select>
-    </YFormField>
+        <select
+          v-model="encounterTypeOptionId"
+          v-bind="encounterTypeAttrs"
+          class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
+        >
+          <option value="" disabled>Type</option>
+          <option v-for="option in options" :key="option.id" :value="option.id">
+            {{ option.label }}
+          </option>
+        </select>
+      </YFormField>
+    </div>
 
     <div v-if="entityTypeKey === 'timeline_event'" class="grid gap-3 sm:grid-cols-2">
       <YFormField label="Event type" name="eventTypeOptionId">

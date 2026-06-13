@@ -36,9 +36,13 @@ const meta = computed(() =>
     formatDate(props.summary.relevant_date),
     props.summary.location_type_label,
     props.summary.encounter_type_label,
-    props.summary.quest_priority_label,
+    props.summary.storyline_type,
+    props.summary.storyline_priority_label,
     props.summary.parent_entity_label ? `in ${props.summary.parent_entity_label}` : '',
     props.summary.related_session_label ? `session ${props.summary.related_session_label}` : '',
+    props.summary.related_storyline_label
+      ? `storyline ${props.summary.related_storyline_label}`
+      : '',
     props.summary.timeline_date_expression,
   ]
     .filter(Boolean)

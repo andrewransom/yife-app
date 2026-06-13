@@ -50,4 +50,23 @@ describe('entity creation validation', () => {
       real_status_id: '11111111-1111-4111-8111-111111111111',
     });
   });
+
+  it('accepts storyline-specific fields and maps them to RPC input', () => {
+    const result = validateCreateEntityInput({
+      entityTypeKey: 'storyline',
+      title: 'Find the Ember Map',
+      statusId: '11111111-1111-4111-8111-111111111111',
+      priorityOptionId: '33333333-3333-4333-8333-333333333333',
+      storylineType: 'quest',
+      isMajor: true,
+    });
+
+    expect(toCreateEntityRpcInput(result)).toMatchObject({
+      title: 'Find the Ember Map',
+      status_id: '11111111-1111-4111-8111-111111111111',
+      priority_option_id: '33333333-3333-4333-8333-333333333333',
+      storyline_type: 'quest',
+      is_major: true,
+    });
+  });
 });

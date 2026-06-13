@@ -31,15 +31,17 @@ function summary(overrides: Partial<EntitySummary> = {}): EntitySummary {
     primary_image_thumb_height: null,
     primary_image_thumb_path: null,
     primary_image_thumb_width: null,
-    quest_priority_label: null,
-    related_plot_arc_entity_id: null,
-    related_plot_arc_label: null,
     related_session_entity_id: null,
     related_session_label: null,
+    related_storyline_entity_id: null,
+    related_storyline_label: null,
     relevant_date: null,
     sort_key: null,
     status_key: 'alive',
     status_label: 'Alive',
+    storyline_category_label: null,
+    storyline_priority_label: null,
+    storyline_type: null,
     timeline_date_expression: null,
     timeline_event_type_label: null,
     updated_at: '2026-06-12T00:00:00Z',
@@ -94,21 +96,22 @@ describe('entity directory', () => {
   });
 
   it('filters by type, status, and loaded summary search fields', () => {
-    const quest = summary({
-      entity_id: 'quest-1',
-      entity_type_key: 'quest',
+    const storyline = summary({
+      entity_id: 'storyline-1',
+      entity_type_key: 'storyline',
       list_caption: 'Find the Ember Map',
-      quest_priority_label: 'High',
+      storyline_priority_label: 'High',
+      storyline_type: 'quest',
       status_key: 'open',
       status_label: 'Open',
     });
 
     expect(
-      filterEntitySummaries([summary(), quest], {
-        entityTypeKey: 'quest',
+      filterEntitySummaries([summary(), storyline], {
+        entityTypeKey: 'storyline',
         statusKey: 'open',
         search: 'ember',
       }),
-    ).toEqual([quest]);
+    ).toEqual([storyline]);
   });
 });

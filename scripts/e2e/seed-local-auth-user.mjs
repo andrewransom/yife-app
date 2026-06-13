@@ -32,45 +32,42 @@ const client = createClient(url, serviceRoleKey, {
   },
 });
 
-const existingUsers = [];
-let page = 1;
-let hasMore = true;
+const { error: createError } = await client.auth.admin.createUser({
+  email,
+  password,
+  email_confirm: true,
+});
 
-while (hasMore) {
-  const { data, error } = await client.auth.admin.listUsers({ page, perPage: 100 });
-
-  if (error) {
-    throw error;
-  }
-
-  existingUsers.push(...data.users);
-  hasMore = data.users.length === 100;
-  page += 1;
-}
-
-const existing = existingUsers.find((user) => user.email === email);
-
-if (existing) {
-  const { error } = await client.auth.admin.updateUserById(existing.id, {
-    email_confirm: true,
-    password,
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  console.log(`Updated local Auth user ${email}`);
-} else {
-  const { error } = await client.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
-
-  if (error) {
-    throw error;
-  }
-
+if (!createError) {
   console.log(`Created local Auth user ${email}`);
+  process.exit(0);
 }
+
+const alreadyExists =
+  createError.status === 422 ||
+  createError.code === 'email_exists' ||
+  createError.message.toLowerCase().includes('already');
+
+if (!alreadyExists) {
+  throw createError;
+}
+
+const verifyClient = createClient(url, serviceRoleKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
+
+const { error: signInError } = await verifyClient.auth.signInWithPassword({
+  email,
+  password,
+});
+
+if (signInError) {
+  throw new Error(
+    `Auth user ${email} already exists, but the password could not be verified. Run pnpm supabase:reset, then rerun this seed script.`,
+  );
+}
+
+console.log(`Local Auth user ${email} already exists and password is valid`);

@@ -36,7 +36,14 @@ export default defineNuxtConfig({
   },
   vite: {
     optimizeDeps: {
-      include: ['@tanstack/vue-query', 'lucide-vue-next'],
+      include: [
+        '@tanstack/vue-query',
+        '@vee-validate/zod',
+        '@vue/devtools-api',
+        'lucide-vue-next',
+        'vee-validate',
+        'zod',
+      ],
     },
   },
 });

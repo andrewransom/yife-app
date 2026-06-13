@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Archive, ChevronRight, PanelRightClose, Plus, Search, Settings } from 'lucide-vue-next';
 import { storeToRefs } from 'pinia';
 import { useRoute } from '#imports';
 import { useProtectedAppBootstrap } from '~/composables/auth/useProtectedAppBootstrap';
 import { useCampaignByIdQuery } from '~/composables/campaigns/useCampaignByIdQuery';
 import { useCampaignMembershipSummaryQuery } from '~/composables/campaigns/useCampaignMembershipSummaryQuery';
+import { useCampaignEntitySummariesQuery } from '~/composables/entities/useCampaignEntitySummariesQuery';
+import { useEntityDetailQuery } from '~/composables/entities/useEntityDetailQuery';
+import { useEntityStatusOptionsQuery } from '~/composables/entities/useEntityStatusOptionsQuery';
+import { useEntityTypeOptionsQuery } from '~/composables/entities/useEntityTypeOptionsQuery';
 import { useUiStore } from '~/stores/ui';
 
 definePageMeta({
@@ -27,6 +31,10 @@ const membershipQuery = useCampaignMembershipSummaryQuery(campaignId, {
 
 const campaign = computed(() => campaignQuery.data.value);
 const membership = computed(() => membershipQuery.data.value);
+const selectedTypeKey = ref('all');
+const selectedStatusKey = ref('');
+const directorySearch = ref('');
+const isCreateOpen = ref(false);
 const isLoading = computed(
   () =>
     bootstrap.isInitializing.value ||
@@ -39,6 +47,12 @@ const isUnavailable = computed(
 const roleLabel = computed(
   () => membership.value?.role_keys[0] ?? campaign.value?.role_keys[0] ?? 'member',
 );
+const canCreateEntities = computed(() =>
+  Boolean(
+    membership.value?.role_keys.includes('owner') ||
+    membership.value?.role_keys.includes('game_master'),
+  ),
+);
 const overviewText = computed(
   () =>
     campaign.value?.description ||
@@ -46,6 +60,37 @@ const overviewText = computed(
 );
 const isBootstrapReady = bootstrap.isReady;
 const isBootstrapError = bootstrap.isError;
+const entityTypesQuery = useEntityTypeOptionsQuery(campaignId, {
+  enabled: computed(() => bootstrap.isReady.value && Boolean(campaign.value)),
+});
+const entitySummariesQuery = useCampaignEntitySummariesQuery(campaignId, {
+  enabled: computed(() => bootstrap.isReady.value && Boolean(campaign.value)),
+});
+const statusOptionsQuery = useEntityStatusOptionsQuery(campaignId, selectedTypeKey, {
+  enabled: computed(() => selectedTypeKey.value !== 'all'),
+});
+const selectedEntityId = computed(() => uiStore.selectedEntityId);
+const entityDetailQuery = useEntityDetailQuery(selectedEntityId, {
+  enabled: computed(() => bootstrap.isReady.value && Boolean(selectedEntityId.value)),
+});
+const entityTypes = computed(() => entityTypesQuery.data.value ?? []);
+const entitySummaries = computed(() => entitySummariesQuery.data.value ?? []);
+const statusOptions = computed(() =>
+  selectedTypeKey.value === 'all' ? [] : (statusOptionsQuery.data.value ?? []),
+);
+const selectedEntityDetail = computed(() => entityDetailQuery.data.value);
+const isDirectoryLoading = computed(
+  () => entitySummariesQuery.isPending.value || entityTypesQuery.isPending.value,
+);
+const isDetailLoading = computed(
+  () => entityDetailQuery.isPending.value || entityDetailQuery.isFetching.value,
+);
+const selectedEntityMissing = computed(
+  () =>
+    Boolean(selectedEntityId.value) &&
+    !entityDetailQuery.isPending.value &&
+    !selectedEntityDetail.value,
+);
 
 watch(
   campaign,
@@ -57,12 +102,34 @@ watch(
   { immediate: true },
 );
 
-const entities = [
-  ['Characters', 'Placeholder directory', 'shared'],
-  ['Locations', 'Placeholder directory', 'shared'],
-  ['NPCs', 'Role-aware details arrive later', 'gm_only'],
-  ['Notes', 'Rich text arrives later', 'private'],
-] as const;
+watch(selectedTypeKey, () => {
+  selectedStatusKey.value = '';
+});
+
+watch(
+  entitySummaries,
+  (summaries) => {
+    if (
+      selectedEntityId.value &&
+      !summaries.some((summary) => summary.entity_id === selectedEntityId.value)
+    ) {
+      uiStore.selectEntity(null);
+    }
+  },
+  { immediate: true },
+);
+
+function openCreate() {
+  if (!canCreateEntities.value) {
+    return;
+  }
+  isCreateOpen.value = true;
+}
+
+function handleCreated(entityId: string) {
+  uiStore.selectEntity(entityId);
+  isCreateOpen.value = false;
+}
 </script>
 
 <template>
@@ -80,7 +147,12 @@ const entities = [
         {{ campaign?.name || 'Campaign workspace' }}
       </h1>
       <YIconButton :icon="Search" label="Search campaign" disabled />
-      <YIconButton :icon="Plus" label="Create record" disabled />
+      <YIconButton
+        :icon="Plus"
+        label="Create record"
+        :disabled="!canCreateEntities"
+        @click="openCreate"
+      />
       <YIconButton :icon="Settings" label="Campaign settings" disabled />
       <YIconButton
         :icon="PanelRightClose"
@@ -122,23 +194,43 @@ const entities = [
           <h2 class="text-sm font-semibold">Directory</h2>
           <YStatusBadge :label="roleLabel" tone="info" />
         </div>
-        <div>
-          <YEntityRowSkeleton
-            v-for="([title, caption, visibility], index) in entities"
-            :key="title"
-            :title="title"
-            :caption="caption"
-            :active="index === 0"
-          >
-            <template #meta>
-              <YVisibilityBadge :visibility="visibility" />
-            </template>
-          </YEntityRowSkeleton>
-        </div>
+        <EntityDirectoryShell
+          :summaries="entitySummaries"
+          :entity-types="entityTypes"
+          :statuses="statusOptions"
+          :selected-entity-id="selectedEntityId"
+          :selected-type-key="selectedTypeKey"
+          :status-key="selectedStatusKey"
+          :search="directorySearch"
+          :is-loading="isDirectoryLoading"
+          :can-create="canCreateEntities"
+          @update:selected-type-key="selectedTypeKey = $event"
+          @update:status-key="selectedStatusKey = $event"
+          @update:search="directorySearch = $event"
+          @select="uiStore.selectEntity($event)"
+          @create="openCreate"
+        />
       </aside>
 
       <section class="min-w-0 bg-[var(--yife-canvas)] p-3">
-        <YPanelSurface heading="Campaign Overview">
+        <YPanelSurface v-if="isCreateOpen" heading="Create Record">
+          <EntityCreateForm
+            :campaign-id="campaignId"
+            :entity-types="entityTypes"
+            :initial-type-key="selectedTypeKey"
+            @created="handleCreated"
+            @cancel="isCreateOpen = false"
+          />
+        </YPanelSurface>
+
+        <EntityDetailShell
+          v-else-if="selectedEntityId"
+          :detail="selectedEntityDetail"
+          :is-loading="isDetailLoading"
+          :is-unavailable="selectedEntityMissing"
+        />
+
+        <YPanelSurface v-else heading="Campaign Overview">
           <div class="flex flex-wrap items-center gap-2 border-b border-[var(--yife-border)] pb-3">
             <YStatusBadge :label="campaign?.status_label || 'Active'" tone="success" />
             <YStatusBadge :label="roleLabel" tone="info" />
@@ -152,8 +244,12 @@ const entities = [
             </div>
             <YEmptyState
               :icon="Archive"
-              heading="No workspace records"
-              text="Directories are placeholders until the entity baseline."
+              :heading="entitySummaries.length ? 'Select a record' : 'No workspace records'"
+              :text="
+                entitySummaries.length
+                  ? 'Open a directory row to inspect its detail shell.'
+                  : 'Create the first campaign record from the directory toolbar.'
+              "
             />
           </div>
         </YPanelSurface>

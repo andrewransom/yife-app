@@ -23,6 +23,15 @@ test('seeded local auth user can create a campaign and see inaccessible campaign
   await expect(page).toHaveURL(/\/campaigns\//);
   await expect(page.getByRole('heading', { name }).first()).toBeVisible();
 
+  await page.getByRole('button', { name: 'Create record' }).click();
+  await page.getByLabel('Entity type').selectOption('party');
+  await page.getByLabel('Name').fill('The Lantern Company');
+  await page.getByRole('button', { name: 'Create' }).click();
+
+  await expect(page.getByRole('button', { name: /The Lantern Company/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'The Lantern Company' })).toBeVisible();
+  await expect(page.getByText('Read-only shell')).toBeVisible();
+
   await page.goto('/campaigns/00000000-0000-4000-8000-000000000001');
   await expect(page.getByRole('heading', { name: 'Campaign unavailable' })).toBeVisible();
   await page.getByRole('link', { name: 'Return home' }).click();

@@ -611,4 +611,418 @@ select pg_temp.assert_true(exists (
 ), 'owner campaign list includes role and status fields');
 reset role;
 
-select 'M02 RLS smoke tests passed' as result;
+create temporary table created_m04_entities (
+  entity_type_key text primary key,
+  entity_id uuid not null
+);
+grant all on created_m04_entities to authenticated;
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+
+insert into created_m04_entities
+select entity_type_key, entity_id
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'character',
+  jsonb_build_object(
+    'name', 'Aria Vale',
+    'status_id', (
+      select sd.id from public.status_definitions sd
+      join public.entity_types et on et.id = sd.entity_type_id
+      where et.key = 'character' and sd.key = 'active' and sd.campaign_id is null
+    ),
+    'controlling_user_id', '33333333-3333-3333-3333-333333333333'
+  )
+);
+
+insert into created_m04_entities
+select entity_type_key, entity_id
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'npc',
+  jsonb_build_object(
+    'name', 'Mira the Broker',
+    'real_status_id', (
+      select sd.id from public.status_definitions sd
+      join public.entity_types et on et.id = sd.entity_type_id
+      where et.key = 'npc' and sd.key = 'alive' and sd.campaign_id is null
+    )
+  )
+);
+
+insert into created_m04_entities
+select entity_type_key, entity_id
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'party',
+  jsonb_build_object('name', 'The Lantern Company')
+);
+
+insert into created_m04_entities
+select entity_type_key, entity_id
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'faction',
+  jsonb_build_object(
+    'name', 'Harbor Guild',
+    'status_id', null
+  )
+);
+
+insert into created_m04_entities
+select entity_type_key, entity_id
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'location',
+  jsonb_build_object(
+    'name', 'Saltwind Docks',
+    'location_type_option_id', (
+      select eod.id from public.entity_option_definitions eod
+      join public.entity_types et on et.id = eod.entity_type_id
+      where et.key = 'location' and eod.group_key = 'location_type' and eod.key = 'district'
+    )
+  )
+);
+
+insert into created_m04_entities
+select entity_type_key, entity_id
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'quest',
+  jsonb_build_object(
+    'title', 'Find the Ember Map',
+    'status_id', (
+      select sd.id from public.status_definitions sd
+      join public.entity_types et on et.id = sd.entity_type_id
+      where et.key = 'quest' and sd.key = 'open' and sd.campaign_id is null
+    ),
+    'priority_option_id', (
+      select eod.id from public.entity_option_definitions eod
+      join public.entity_types et on et.id = eod.entity_type_id
+      where et.key = 'quest' and eod.group_key = 'quest_priority' and eod.key = 'high'
+    ),
+    'is_major', true
+  )
+);
+
+insert into created_m04_entities
+select entity_type_key, entity_id
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'session',
+  jsonb_build_object(
+    'title', 'Session 1',
+    'session_date', current_date,
+    'status_id', (
+      select sd.id from public.status_definitions sd
+      join public.entity_types et on et.id = sd.entity_type_id
+      where et.key = 'session' and sd.key = 'planned' and sd.campaign_id is null
+    )
+  )
+);
+
+insert into created_m04_entities
+select entity_type_key, entity_id
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'plot_arc',
+  jsonb_build_object(
+    'title', 'The Ash Crown',
+    'status_id', (
+      select sd.id from public.status_definitions sd
+      join public.entity_types et on et.id = sd.entity_type_id
+      where et.key = 'plot_arc' and sd.key = 'planned' and sd.campaign_id is null
+    )
+  )
+);
+
+insert into created_m04_entities
+select entity_type_key, entity_id
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'encounter',
+  jsonb_build_object(
+    'title', 'Dockside Ambush',
+    'status_id', (
+      select sd.id from public.status_definitions sd
+      join public.entity_types et on et.id = sd.entity_type_id
+      where et.key = 'encounter' and sd.key = 'planned' and sd.campaign_id is null
+    ),
+    'encounter_type_option_id', (
+      select eod.id from public.entity_option_definitions eod
+      join public.entity_types et on et.id = eod.entity_type_id
+      where et.key = 'encounter' and eod.group_key = 'encounter_type' and eod.key = 'combat'
+    ),
+    'related_session_entity_id', (
+      select entity_id from created_m04_entities where entity_type_key = 'session'
+    ),
+    'related_plot_arc_entity_id', (
+      select entity_id from created_m04_entities where entity_type_key = 'plot_arc'
+    )
+  )
+);
+
+insert into created_m04_entities
+select entity_type_key, entity_id
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'timeline_event',
+  jsonb_build_object(
+    'title', 'The Beacon Falls',
+    'date_expression', 'Three winters ago',
+    'sort_key', '0003-winter',
+    'event_type_option_id', (
+      select eod.id from public.entity_option_definitions eod
+      join public.entity_types et on et.id = eod.entity_type_id
+      where et.key = 'timeline_event' and eod.group_key = 'timeline_event_type' and eod.key = 'campaign_event'
+    ),
+    'related_session_entity_id', (
+      select entity_id from created_m04_entities where entity_type_key = 'session'
+    )
+  )
+);
+
+select pg_temp.assert_true(count(*) = 10, 'owner can create all M04 entity types')
+from created_m04_entities;
+
+select pg_temp.assert_true(not exists (
+  select 1
+  from created_m04_entities cme
+  where not exists (
+    select 1 from public.entity_sections es where es.entity_id = cme.entity_id
+  )
+), 'typed creation creates default section rows');
+
+select pg_temp.assert_true(default_visibility = 'gm_only', 'plot arcs default GM-only')
+from public.campaign_entities
+where id = (select entity_id from created_m04_entities where entity_type_key = 'plot_arc');
+
+select pg_temp.assert_true(n.apparent_status_id = n.real_status_id, 'NPC apparent status defaults to real status')
+from public.npcs n
+where n.entity_id = (select entity_id from created_m04_entities where entity_type_key = 'npc');
+
+select pg_temp.assert_true(exists (
+  select 1
+  from public.get_campaign_entity_summaries((select campaign_id from created_campaign))
+  where entity_id = (select entity_id from created_m04_entities where entity_type_key = 'quest')
+    and quest_priority_label = 'High'
+    and is_major
+), 'safe summaries include dense type-specific metadata');
+
+select entity_id
+into temporary table hidden_reference_faction
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'faction',
+  jsonb_build_object(
+    'name', 'Hidden Faction',
+    'default_visibility', 'gm_only'
+  )
+);
+
+select entity_id
+into temporary table npc_with_hidden_reference
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'npc',
+  jsonb_build_object(
+    'name', 'Public Contact',
+    'real_status_id', (
+      select sd.id from public.status_definitions sd
+      join public.entity_types et on et.id = sd.entity_type_id
+      where et.key = 'npc' and sd.key = 'alive' and sd.campaign_id is null
+    ),
+    'faction_entity_id', (select entity_id from hidden_reference_faction)
+  )
+);
+
+reset role;
+
+select pg_temp.expect_error(
+  $$set role authenticated;
+    select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+    select * from public.create_campaign_entity(
+      (select campaign_id from created_campaign),
+      'party',
+      jsonb_build_object('name', 'Player Party')
+    );
+    reset role;$$,
+  'players cannot create typed campaign entities'
+);
+reset role;
+
+select pg_temp.expect_error(
+  $$set role authenticated;
+    select set_config('request.jwt.claim.sub', '55555555-5555-5555-5555-555555555555', false);
+    select * from public.create_campaign_entity(
+      (select campaign_id from created_campaign),
+      'party',
+      jsonb_build_object('name', 'Stranger Party')
+    );
+    reset role;$$,
+  'non-members cannot create typed campaign entities'
+);
+reset role;
+
+select pg_temp.expect_error(
+  $$set role authenticated;
+    select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+    select * from public.create_campaign_entity(
+      (select campaign_id from created_campaign),
+      'character',
+      jsonb_build_object(
+        'name', 'Removed Controller',
+        'status_id', (
+          select sd.id from public.status_definitions sd
+          join public.entity_types et on et.id = sd.entity_type_id
+          where et.key = 'character' and sd.key = 'active' and sd.campaign_id is null
+        ),
+        'controlling_user_id', '44444444-4444-4444-4444-444444444444'
+      )
+    );
+    reset role;$$,
+  'character controlling users must be active members'
+);
+reset role;
+
+select pg_temp.expect_error(
+  $$set role authenticated;
+    select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+    select * from public.create_campaign_entity(
+      (select campaign_id from created_campaign),
+      'quest',
+      jsonb_build_object(
+        'title', 'Bad Status',
+        'status_id', (
+          select sd.id from public.status_definitions sd
+          join public.entity_types et on et.id = sd.entity_type_id
+          where et.key = 'character' and sd.key = 'active' and sd.campaign_id is null
+        )
+      )
+    );
+    reset role;$$,
+  'wrong-entity-type statuses are rejected'
+);
+reset role;
+
+select pg_temp.expect_error(
+  $$set role authenticated;
+    select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+    select * from public.create_campaign_entity(
+      (select campaign_id from created_campaign),
+      'location',
+      jsonb_build_object(
+        'name', 'Bad Option',
+        'location_type_option_id', (
+          select eod.id from public.entity_option_definitions eod
+          join public.entity_types et on et.id = eod.entity_type_id
+          where et.key = 'encounter' and eod.group_key = 'encounter_type' and eod.key = 'combat'
+        )
+      )
+    );
+    reset role;$$,
+  'wrong-group options are rejected'
+);
+reset role;
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+update public.campaign_entity_type_settings cets
+set is_enabled = false
+from public.entity_types et
+where cets.entity_type_id = et.id
+  and cets.campaign_id = (select campaign_id from created_campaign)
+  and et.key = 'party';
+reset role;
+
+select pg_temp.expect_error(
+  $$set role authenticated;
+    select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+    select * from public.create_campaign_entity(
+      (select campaign_id from created_campaign),
+      'party',
+      jsonb_build_object('name', 'Disabled Party')
+    );
+    reset role;$$,
+  'disabled campaign entity types cannot be created'
+);
+reset role;
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+select *
+into temporary table other_campaign
+from public.create_campaign('Other Campaign', current_date, null);
+
+select entity_id
+into temporary table other_location
+from public.create_campaign_entity(
+  (select campaign_id from other_campaign),
+  'location',
+  jsonb_build_object(
+    'name', 'Other Docks',
+    'location_type_option_id', (
+      select eod.id from public.entity_option_definitions eod
+      join public.entity_types et on et.id = eod.entity_type_id
+      where et.key = 'location' and eod.group_key = 'location_type' and eod.key = 'district'
+    )
+  )
+);
+reset role;
+
+select pg_temp.expect_error(
+  $$set role authenticated;
+    select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+    select * from public.create_campaign_entity(
+      (select campaign_id from created_campaign),
+      'location',
+      jsonb_build_object(
+        'name', 'Cross Campaign Child',
+        'location_type_option_id', (
+          select eod.id from public.entity_option_definitions eod
+          join public.entity_types et on et.id = eod.entity_type_id
+          where et.key = 'location' and eod.group_key = 'location_type' and eod.key = 'district'
+        ),
+        'parent_location_entity_id', (select entity_id from other_location)
+      )
+    );
+    reset role;$$,
+  'cross-campaign structural references are rejected'
+);
+reset role;
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+select pg_temp.assert_true(exists (
+  select 1
+  from public.get_campaign_entity_summaries((select campaign_id from created_campaign))
+  where entity_id = (select entity_id from created_m04_entities where entity_type_key = 'npc')
+), 'player summary reads include shared created records');
+select pg_temp.assert_true(not exists (
+  select 1
+  from public.get_campaign_entity_summaries((select campaign_id from created_campaign))
+  where entity_id = (select entity_id from created_m04_entities where entity_type_key = 'encounter')
+), 'player summary reads omit GM-only records');
+select pg_temp.assert_true(not exists (
+  select 1
+  from public.npcs
+  where entity_id = (select entity_id from created_m04_entities where entity_type_key = 'npc')
+), 'players cannot read raw NPC detail rows');
+select pg_temp.assert_true(npc_real_status_label is null, 'player-safe NPC detail omits real status')
+from public.get_entity_detail((select entity_id from created_m04_entities where entity_type_key = 'npc'));
+select pg_temp.assert_true(
+  parent_entity_id is null and parent_entity_label is null,
+  'player summaries hide inaccessible structural reference ids and labels'
+)
+from public.get_campaign_entity_summaries((select campaign_id from created_campaign))
+where entity_id = (select entity_id from npc_with_hidden_reference);
+select pg_temp.assert_true(not exists (
+  select 1
+  from public.entity_sections
+  where entity_id = (select entity_id from created_m04_entities where entity_type_key = 'npc')
+    and section_key = 'gm_details'
+), 'section RLS hides GM-only sections from players');
+reset role;
+
+select 'M04 RLS smoke tests passed' as result;

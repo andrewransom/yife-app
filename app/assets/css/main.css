@@ -9,40 +9,64 @@
 
 :root {
   color-scheme: light;
-  --yife-canvas: #f7f8f6;
+  --yife-canvas: #f8fafc;
   --yife-surface: #ffffff;
-  --yife-surface-muted: #eef1ee;
-  --yife-border: #d9ded7;
-  --yife-text: #18201c;
-  --yife-text-muted: #5f6b63;
-  --yife-primary: #2f6f5e;
+  --yife-surface-muted: #eff6ff;
+  --yife-border: #cbd5e1;
+  --yife-text: #0f172a;
+  --yife-text-muted: #475569;
+  --yife-primary: #2563eb;
   --yife-primary-text: #ffffff;
-  --yife-secondary: #4d5f91;
-  --yife-accent: #8b5e34;
-  --yife-success: #287a4b;
-  --yife-info: #2f6f8f;
-  --yife-warning: #a06715;
-  --yife-error: #b83f3f;
-  --yife-focus: #2563eb;
+  --yife-secondary: #1d4ed8;
+  --yife-accent: #0ea5e9;
+  --yife-success: #16a34a;
+  --yife-info: #0284c7;
+  --yife-warning: #d97706;
+  --yife-error: #dc2626;
+  --yife-focus: #1d4ed8;
+  --ui-primary: #2563eb;
+  --ui-secondary: #1d4ed8;
+  --ui-success: #16a34a;
+  --ui-info: #0284c7;
+  --ui-warning: #d97706;
+  --ui-error: #dc2626;
+  --ui-bg: var(--yife-canvas);
+  --ui-bg-muted: var(--yife-surface-muted);
+  --ui-bg-elevated: var(--yife-surface);
+  --ui-border: var(--yife-border);
+  --ui-text: var(--yife-text);
+  --ui-text-muted: var(--yife-text-muted);
 }
 
 .dark {
   color-scheme: dark;
-  --yife-canvas: #101312;
-  --yife-surface: #181d1b;
-  --yife-surface-muted: #202724;
-  --yife-border: #344039;
-  --yife-text: #edf2ee;
-  --yife-text-muted: #a8b3ac;
-  --yife-primary: #72b6a2;
-  --yife-primary-text: #0d1713;
-  --yife-secondary: #9ca9d8;
-  --yife-accent: #d0a06b;
-  --yife-success: #7cc995;
-  --yife-info: #82bdd3;
-  --yife-warning: #e0ad5f;
-  --yife-error: #e78181;
+  --yife-canvas: #020617;
+  --yife-surface: #0f172a;
+  --yife-surface-muted: #1e293b;
+  --yife-border: #334155;
+  --yife-text: #f8fafc;
+  --yife-text-muted: #cbd5e1;
+  --yife-primary: #60a5fa;
+  --yife-primary-text: #020617;
+  --yife-secondary: #93c5fd;
+  --yife-accent: #38bdf8;
+  --yife-success: #4ade80;
+  --yife-info: #38bdf8;
+  --yife-warning: #fbbf24;
+  --yife-error: #f87171;
   --yife-focus: #93c5fd;
+  --ui-primary: #60a5fa;
+  --ui-secondary: #93c5fd;
+  --ui-success: #4ade80;
+  --ui-info: #38bdf8;
+  --ui-warning: #fbbf24;
+  --ui-error: #f87171;
+  --ui-bg: var(--yife-canvas);
+  --ui-bg-muted: var(--yife-surface-muted);
+  --ui-bg-elevated: var(--yife-surface);
+  --ui-border: var(--yife-border);
+  --ui-text: var(--yife-text);
+  --ui-text-muted: var(--yife-text-muted);
 }
 
 html {
@@ -75,5 +99,9 @@ select {
 .yife-app {
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.66), transparent 18rem), var(--yife-canvas);
+    linear-gradient(180deg, rgb(239 246 255 / 0.72), transparent 18rem), var(--yife-canvas);
+}
+
+.dark .yife-app {
+  background: linear-gradient(180deg, rgb(30 41 59 / 0.58), transparent 18rem), var(--yife-canvas);
 }

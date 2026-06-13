@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
 const labels = {
   shared: 'Shared',
   gm_only: 'GM',
@@ -13,14 +15,22 @@ const tones = {
 
 const props = withDefaults(
   defineProps<{
-    visibility?: keyof typeof labels;
+    visibility?: keyof typeof labels | string | null;
   }>(),
   {
     visibility: 'shared',
   },
 );
+
+const normalizedVisibility = computed(() => {
+  if (props.visibility === 'gm_only' || props.visibility === 'private') {
+    return props.visibility;
+  }
+
+  return 'shared';
+});
 </script>
 
 <template>
-  <YStatusBadge :label="labels[props.visibility]" :tone="tones[props.visibility]" />
+  <YStatusBadge :label="labels[normalizedVisibility]" :tone="tones[normalizedVisibility]" />
 </template>

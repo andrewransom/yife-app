@@ -8,7 +8,7 @@ Detailed implementation plans were written for roadmap milestones 04 through 12:
 - `docs/dev/milestones/05-notes-sections-rich-text-and-mentions.md`
 - `docs/dev/milestones/06-role-aware-visibility-and-player-gm-views.md`
 - `docs/dev/milestones/07-relationships-timeline-and-context-panels.md`
-- `docs/dev/milestones/08-sessions-quests-encounters-plot-arcs-and-activity.md`
+- `docs/dev/milestones/08-sessions-storylines-encounters-and-activity.md`
 - `docs/dev/milestones/09-parties-characters-resources-funds-and-currencies.md`
 - `docs/dev/milestones/10-media-and-image-workflow.md`
 - `docs/dev/milestones/11-workbench-layouts-command-palette-and-shortcuts.md`

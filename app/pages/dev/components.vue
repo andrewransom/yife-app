@@ -40,7 +40,7 @@ const isEnabled = String(config.public.devComponentWorkbench) === 'true';
       </YPanelSurface>
 
       <YPanelSurface heading="Entity Rows">
-        <YEntityRowSkeleton title="The Amber Road" caption="Quest · active" active>
+        <YEntityRowSkeleton title="The Amber Road" caption="Storyline · active" active>
           <template #meta>
             <YVisibilityBadge visibility="shared" />
           </template>

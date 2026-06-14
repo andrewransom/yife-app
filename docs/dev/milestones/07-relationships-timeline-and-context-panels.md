@@ -148,7 +148,12 @@ Minimum fields:
 - `relationship_type_key`
 - `label`
 - `visibility`
-- `source_detail`
+- `source_type`
+- nullable `source_note_id`
+- nullable `source_section_id`
+- nullable `source_contribution_id`
+- `source_summary`
+- nullable `mention_count`
 - `updated_at` or `created_at`
 
 Rules:
@@ -156,21 +161,31 @@ Rules:
 - `relation_source` is `explicit`, `structural`, or `mention`.
 - Structural links stay read-only in this surface.
 - Mention links are derived read-only relationships.
-- Multiple mentions between the same source and target should be deduped or grouped for display, while preserving enough source detail to navigate to the underlying mentions.
+- Multiple mentions between the same source and target should be deduped or grouped for display, while preserving safe source locators and counts so the UI can navigate to the underlying note/section/contribution context.
 - Relationship source must be shown in UI so users know whether they can edit it.
-- Visibility filtering must apply to source entity, target entity, relationship row, section/note source, and mention source.
+- Explicit relationship visibility filtering must apply to source entity, target entity, and relationship row visibility.
+- Structural relationship visibility filtering must apply to source entity, target entity, and the typed row/field visibility rules that create the structural link.
+- Mention-derived related-record visibility must reuse the same security envelope as backlinks:
+  - source entity visibility
+  - current target entity visibility
+  - note visibility for note sources
+  - section visibility for section sources
+  - parent section visibility plus contribution-row visibility for contribution sources
+  - `private`, `gm_only`, and `character_owner_gm` restrictions from milestone 06
+- Unauthorized users must not learn hidden mention/relationship existence through row presence, grouped counts, or source labels.
 - Player reads must not reveal GM-only relationship existence even when both entities are otherwise visible.
-- Use placeholder-safe target resolution where target visibility changes after a relationship is created.
+- Mention/group rows must use the milestone 06 placeholder-resolution rules when a previously valid target later becomes deleted or inaccessible.
+- Arbitrary related-record reads for unauthorized callers should collapse hidden target states to coarse placeholder-safe outcomes rather than exposing precise hidden-state reasons unless the caller already has legitimate visible source context.
 
 ### 5. Add Structural Link Coverage
 
 Include structural links from:
 
 - location parent
-- quest parent
+- storyline parent
 - faction parent
 - encounter related session
-- encounter related plot arc
+- encounter related storyline
 - timeline event related session
 - character controlling user context where useful, but do not treat users as campaign entities
 - party membership links later extended in M09
@@ -219,6 +234,8 @@ Rules:
 - Private timeline events are visible only to their creator.
 - GM-only timeline events are owner/GM-visible only.
 - Player timeline reads must not leak hidden events through gaps/counts.
+- `related session` filter uses the typed `timeline_events.related_session_entity_id`.
+- `related entity` filter must be defined explicitly in the implementation/read surface. In MVP it should match timeline events linked to the selected entity through explicit relationships plus typed structural links, and must not treat mention-derived links as timeline-filter matches.
 
 ### 8. Add Context Panel Widgets
 

@@ -266,7 +266,7 @@ Rules:
 - Campaign, character, NPC, and location primary images must reference a campaign-scoped asset in the same campaign.
 - User profile avatars, if implemented, reference a user-profile asset created by that user.
 - MVP primary images are player-visible whenever the parent campaign/entity is visible to the player.
-- GM-private or spoiler images for otherwise player-visible NPCs, locations, quests, sections, maps, or handouts are deferred until media links support visibility or private media is promoted.
+- GM-private or spoiler images for otherwise player-visible NPCs, locations, Storylines, sections, maps, or handouts require media links with visibility. Private media storage remains deferred.
 - Until then, spoiler image content belongs outside player-visible primary image slots.
 - Deleting or replacing a primary image must not break list rendering; missing or deleted images fall back to placeholder UI.
 - Campaign entity summaries should include enough primary image metadata to render `thumb_160` without fetching full asset details.
@@ -274,7 +274,7 @@ Rules:
 
 ### `media_asset_links`
 
-Generic media links are retained for future flexibility but are not required for MVP primary-image workflows.
+Generic media links support player-visible and Game Master-only Session/entity handouts and reference images. They are separate from primary-image workflows.
 
 ```text
 media_asset_links
@@ -284,6 +284,7 @@ media_asset_links
 - note_id nullable fk -> notes.id
 - section_id nullable fk -> entity_sections.id
 - link_role
+- visibility
 - sort_order
 - created_by
 - created_at
@@ -291,7 +292,9 @@ media_asset_links
 
 MVP rules:
 
-- Generic note, section, and gallery attachments are deferred.
+- Link visibility must be enforced before media metadata reaches player-facing reads.
+- Hidden media links must not leak through counts, placeholders, previews, filenames, labels, or related summaries.
+- Generic note, section, and gallery attachments are deferred unless explicitly promoted.
 - If links are implemented early, linked records must belong to the same campaign as the asset.
 - Link visibility must not grant access to hidden entities, notes, or sections.
 

@@ -15,7 +15,7 @@ This milestone should add constrained desktop workbench layouts, per-user/per-ca
 - `docs/decisions/yife-technology-stack-decisions.md`
 - `docs/dev/milestones/04-entity-creation-and-directory-baseline.md`
 - `docs/dev/milestones/07-relationships-timeline-and-context-panels.md`
-- `docs/dev/milestones/08-sessions-quests-encounters-plot-arcs-and-activity.md`
+- `docs/dev/milestones/08-sessions-storylines-encounters-and-activity.md`
 
 ## Goals
 
@@ -266,7 +266,7 @@ Quick create supports:
 - common entity creation
 - encounters related to current session
 - timeline events related to current session
-- quests and related records where context is safe
+- Storylines and related records where context is safe
 
 Rules:
 

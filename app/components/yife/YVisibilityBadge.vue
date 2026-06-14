@@ -5,12 +5,14 @@ const labels = {
   shared: 'Shared',
   gm_only: 'GM',
   private: 'Private',
+  character_owner_gm: 'Owner + GM',
 } as const;
 
 const tones = {
   shared: 'success',
   gm_only: 'warning',
   private: 'error',
+  character_owner_gm: 'info',
 } as const;
 
 const props = withDefaults(
@@ -23,7 +25,11 @@ const props = withDefaults(
 );
 
 const normalizedVisibility = computed(() => {
-  if (props.visibility === 'gm_only' || props.visibility === 'private') {
+  if (
+    props.visibility === 'gm_only' ||
+    props.visibility === 'private' ||
+    props.visibility === 'character_owner_gm'
+  ) {
     return props.visibility;
   }
 

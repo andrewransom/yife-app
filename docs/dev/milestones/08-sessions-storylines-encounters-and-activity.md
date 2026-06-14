@@ -1,8 +1,8 @@
-# 08. Sessions, Quests, Encounters, Plot Arcs, And Activity
+# 08. Sessions, Storylines, Encounters, And Activity
 
 ## Purpose
 
-Build the campaign-prep and post-session maintenance workflows around sessions, quests, encounters, plot arcs, and recent activity.
+Build the campaign-prep and post-session maintenance workflows around sessions, Storylines, encounters, and recent activity.
 
 This milestone should make session-oriented campaign management useful without becoming a virtual tabletop, combat tracker, or live-session automation system.
 
@@ -22,13 +22,13 @@ This milestone should make session-oriented campaign management useful without b
 
 - Add or finish session attendance tables and workflows.
 - Build session directory, session detail, session notes, and session-oriented context surfaces.
-- Build quest log views for player and GM use.
+- Build Storyline list views for player and GM use.
 - Build lightweight encounter planning and outcome surfaces.
-- Build plot arc planning views for owners/GMs.
+- Support major parent Storylines as arc planning views for owners/GMs.
 - Add role-aware recent activity feed derived from existing metadata.
 - Add current-session selection helpers for later layout work.
-- Improve quick create/context behavior for sessions, quests, encounters, timeline events, and notes.
-- Add tests for role-aware session/quest/encounter/plot arc/activity behavior.
+- Improve quick create/context behavior for sessions, Storylines, encounters, timeline events, and notes.
+- Add tests for role-aware session/Storyline/encounter/activity behavior.
 
 ## Non-Goals
 
@@ -44,7 +44,7 @@ This milestone should make session-oriented campaign management useful without b
 
 ## Assumptions
 
-- M04 created typed records for sessions, quests, encounters, plot arcs, and timeline events.
+- M04.5 created typed records for sessions, Storylines, encounters, and timeline events.
 - M05 added notes and rich text sections.
 - M07 added relationships, related-records, timeline browsing, and context panels.
 - Activity can start as derived read models over existing metadata rather than an append-only event table.
@@ -69,6 +69,7 @@ Rules:
 - Owners/GMs can manage attendance.
 - Players can view visible attendance and may update their own attendance only if the product decision is explicitly enabled; default to owner/GM-managed attendance for M08.
 - Attendance UI must use safe member profile display data only; it must not expose auth email or user settings.
+- Attendance writes should go through RPCs rather than direct table writes because the workflow is role-sensitive and may update multiple rows together.
 
 ### 2. Build Session Detail Workflow
 
@@ -76,21 +77,25 @@ Enhance session detail shells with:
 
 - session date
 - status
-- visible summary section
+- `public_summary` / `gm_summary` short summary fields where useful
+- shared `session_notes` section
 - GM prep section
 - GM private notes section
 - attached notes
 - attending users
 - attending characters
-- related quests
+- related Storylines
 - related NPCs/locations/encounters
 - related timeline events
 
 Rules:
 
+- Use the existing M04.5 session section model and keys: `session_notes`, `gm_prep`, `gm_private_notes`.
 - Players see only shared/player-visible session sections and notes.
 - Owners/GMs see prep and private sections.
 - Session notes reuse the common notes component.
+- Reuse the existing M07 related-records/relationships model for session context. Do not add new typed session foreign keys for Storylines, NPCs, factions, or locations in M08.
+- `encounters.related_session_entity_id` and `timeline_events.related_session_entity_id` remain the primary typed session links; other session context comes from explicit relationships, structural links already in schema, mentions, and attached notes.
 - Session date display uses native `Intl`; no date library unless implementation proves painful.
 - Session status uses seeded definitions.
 
@@ -127,27 +132,34 @@ For M08:
 - Keep any temporary override in Pinia/local UI state.
 - Return placeholder state when no sessions exist.
 - Use this helper for session-oriented context panels and quick create defaults.
+- Resolver ordering is fixed for M08: choose the nearest upcoming `planned` session first, then fall back to the most recent `completed` session, and ignore `cancelled` sessions.
+- The resolver must respect role preview and visibility filtering before choosing a result.
 
-### 5. Build Quest Log Workflow
+### 5. Build Storyline Workflow
 
-Enhance quest directory/detail with:
+Enhance Storyline directory/detail with:
 
 - status filters
+- type filter
+- category filter
 - priority filter
 - major/minor filter
-- parent quest display
+- parent Storyline display
 - related NPC/location/faction/session context
-- player-facing quest log projection
+- player-facing Storyline projection
 - GM private details
-- player observations/contributions
 
 Rules:
 
-- Players see player-visible quest log content.
-- Owners/GMs see private quest details.
-- Hidden quest status remains GM-only unless explicitly shared through safe reads.
-- Parent quest structural links appear in related records.
-- Quest workflows stay lightweight; no kanban board or automation.
+- Players see player-visible Storyline content.
+- Owners/GMs see private Storyline details.
+- M08 must not introduce a second Storyline permission model. Reuse the existing entity creation/edit policy rules from M04.5.
+- If the current workspace/UI remains GM-only for entity creation, keep player-created Storylines out of scope for M08 implementation. Do not widen create UI/permissions in this milestone just for Storylines.
+- If player-created Storylines are already enabled through the existing entity permission model, shared player-created Storylines remain `player_edit` and private player-created Storylines remain author-only / `owner_edit`.
+- Hiddenness is visibility, not a status.
+- Parent Storyline structural links appear in related records.
+- Major parent Storylines replace plot arc planning records.
+- Storyline workflows stay lightweight; no kanban board or automation.
 
 ### 6. Build Encounter Workflow
 
@@ -156,8 +168,8 @@ Enhance encounter detail/list surfaces with:
 - encounter type
 - status
 - related session
-- related plot arc
-- related NPCs/locations/quests through relationships
+- related Storyline
+- related NPCs/locations/Storylines through relationships
 - GM prep sections
 - player-visible outcome section after play where exposed
 
@@ -168,21 +180,21 @@ Rules:
 - No tactical stat block editor beyond existing simple GM-only structured/stat-block placeholder if present.
 - No combat/run mode.
 
-### 7. Build Plot Arc Workflow
+### 7. Build Arc Planning With Major Storylines
 
-Enhance plot arc detail/list surfaces with:
+Enhance major parent Storyline detail/list surfaces with:
 
 - status
-- related quests
+- child Storylines
 - related NPCs/locations/encounters
 - GM planning sections
 - outcome/summary sections where useful
 
 Rules:
 
-- Plot arcs are GM-only by default.
-- Players should not see plot arc directories or hidden arc names.
-- Plot arcs organize prep; they do not create player-facing navigation unless content is explicitly exposed through shared entities/sections.
+- Major parent Storylines can be GM-only or shared based on visibility.
+- Players should not see GM-only Storylines or hidden arc names.
+- Major Storylines organize prep; they do not create player-facing navigation unless content is explicitly exposed through shared entities/sections.
 
 ### 8. Add Session-Oriented Quick Create
 
@@ -192,7 +204,7 @@ Use current context to prefill safe defaults for:
 - encounters related to current session
 - timeline events related to current session
 - notes attached to selected entity and current session where appropriate
-- quest/session relationship prompts where useful
+- Storyline/session explicit relationship prompts where useful
 
 Rules:
 
@@ -214,6 +226,20 @@ Initial sources:
 - new/updated relationships
 - uploaded media later
 - membership/invitation changes later where visible
+
+For M08 scope, implement only:
+
+- created/updated campaign entities
+- new/updated notes
+- updated entity sections
+- new/updated contributions
+- new/updated relationships
+
+Defer as initial feed sources unless implementation is already trivial:
+
+- status-only activity rows separate from the entity update row
+- uploaded media
+- membership/invitation changes
 
 Minimum fields:
 
@@ -255,35 +281,36 @@ Rules:
 
 ### 11. Add Query And Mutation Composables
 
-Expected query composables:
+Reuse the existing generic entity read pattern where possible:
+
+- `useCampaignEntitySummariesQuery` remains the primary campaign-wide summary read.
+- `useEntityDetailQuery` remains the primary entity detail read.
+- Existing preview-as-player query behavior and query-key separation must be preserved for all new session/Storyline/encounter/activity reads.
+
+Add targeted query composables for the new missing behavior:
 
 - `useSessionsQuery`
-- `useSessionDetailQuery`
 - `useSessionAttendanceQuery`
 - `useCurrentSessionQuery`
-- `useQuestsQuery`
-- `useQuestDetailQuery`
+- `useStorylinesQuery`
 - `useEncountersQuery`
-- `useEncounterDetailQuery`
-- `usePlotArcsQuery`
-- `usePlotArcDetailQuery`
 - `useCampaignActivityQuery`
 
 Expected mutation composables:
 
 - `useUpdateSessionMutation`
 - `useUpdateSessionAttendanceMutation`
-- `useUpdateQuestMutation`
+- `useUpdateStorylineMutation`
 - `useUpdateEncounterMutation`
-- `useUpdatePlotArcMutation`
-- existing create entity mutation where creation is unchanged
+- existing generic create/update entity mutations where creation or core detail editing is unchanged
 
 Rules:
 
 - Components do not call Supabase directly.
 - TanStack Query owns server data.
-- Mutations invalidate summaries, detail, related records, activity, and current-session caches where relevant.
+- Mutations invalidate generic summaries/detail queries plus related records, activity, and current-session caches where relevant.
 - Pinia stores only current UI selection or temporary current-session override.
+- New M08 composables should exist only where the existing generic entity summary/detail reads are insufficient for filtering, attendance, current-session resolution, or activity.
 
 ### 12. Add Tests
 
@@ -293,8 +320,8 @@ Database/RLS/RPC tests:
 - session attendance rejects cross-campaign characters
 - duplicate attendance rows are prevented
 - players cannot read GM prep/private session sections
-- players cannot see GM-only plot arcs or encounters
-- hidden quests do not appear in player quest log
+- players cannot see GM-only Storylines or encounters
+- private Storylines do not appear in other players' Storyline lists
 - derived activity omits GM-only/private sources for players
 - private note/contribution activity is visible only to the author
 - activity feed labels are generated from visible safe subjects, not raw hidden labels
@@ -304,7 +331,7 @@ Unit/component tests:
 
 - current-session resolver handles upcoming, completed, and empty cases
 - session directory filters/sorts correctly
-- quest log filters status/priority/major-minor
+- Storyline list filters status/type/category/priority/major-minor
 - activity row renders actor/action/subject safely
 - quick create prefill respects selected entity/current session context
 
@@ -313,8 +340,8 @@ Playwright smoke tests:
 - create planned session and mark attendance
 - add session note with player-visible and GM-only variants
 - verify player session detail omits GM prep
-- create quest and verify player quest log projection
-- create GM-only encounter/plot arc and verify player cannot see it
+- create Storyline and verify player Storyline projection
+- create GM-only encounter/Storyline and verify player cannot see it
 - verify recent activity differs for GM and player
 
 ### 13. Verify Locally
@@ -339,14 +366,14 @@ Document any manual verification for role-aware activity and session context.
 ## Manual Steps Required From Andrew
 
 - Review the session workflow for actual table-use during prep and post-session cleanup.
-- Verify quest log player/GM differences with realistic data.
+- Verify Storyline player/GM differences with realistic data.
 - Review recent activity noise level and labels.
 
 ## Success Criteria
 
 - Sessions support attendance, notes, visible summaries, and GM prep/private sections.
-- Quest log is usable for player and GM views.
-- Encounters and plot arcs are usable as lightweight GM planning records.
+- Storyline list is usable for player and GM views.
+- Encounters and major Storylines are usable as lightweight GM planning records.
 - Current-session helper chooses sensible defaults.
 - Quick create uses current session/selected entity context safely.
 - Recent activity shows meaningful changes without leaking hidden content.
@@ -355,7 +382,7 @@ Document any manual verification for role-aware activity and session context.
 ## What Good Looks Like
 
 - A GM can prep a session, track attendance, connect relevant records, and add notes.
-- A player can see the sessions, quests, notes, and activity they are allowed to know about.
+- A player can see the sessions, Storylines, notes, and activity they are allowed to know about.
 - Activity gives useful orientation without pretending to be a full audit log.
 
 ## Resolved Decisions
@@ -364,7 +391,7 @@ Document any manual verification for role-aware activity and session context.
 - Activity starts as a role-aware derived feed, not an append-only event log.
 - Timeline events remain manual and may link to sessions.
 - Attendance is owner/GM-managed in M08 unless explicitly expanded later.
-- Encounters and plot arcs default to GM-only.
+- Encounters default to GM-only; Storyline visibility follows record visibility and creator policy.
 
 ## Review Notes
 

@@ -14,6 +14,7 @@ This milestone should make visibility behavior trustworthy across entity summari
 - `docs/decisions/yife-content-model-db-decisions.md`
 - `docs/decisions/yife-technology-stack-decisions.md`
 - `docs/dev/milestones/04-entity-creation-and-directory-baseline.md`
+- `docs/dev/milestones/04.5-entity-enhancements.md`
 - `docs/dev/milestones/05-notes-sections-rich-text-and-mentions.md`
 
 ## Goals
@@ -21,7 +22,9 @@ This milestone should make visibility behavior trustworthy across entity summari
 - Harden player-facing and mixed-visibility read surfaces.
 - Make GM/player role context clear in the campaign workspace.
 - Ensure NPC real status and apparent status behave correctly.
+- Ensure `character_owner_gm` and other owner-sensitive surfaces behave correctly.
 - Distinguish GM canon, player-visible canon, and player-authored knowledge.
+- Respect the `04.5` allowlisted typed-field visibility model and split public/true facts.
 - Add placeholder-safe resolution for inaccessible, private, GM-only, deleted, and hard-deleted entity references.
 - Ensure private notes/timeline/contributions are author-only.
 - Add player contribution workflows where section edit policies allow them.
@@ -41,6 +44,7 @@ This milestone should make visibility behavior trustworthy across entity summari
 ## Assumptions
 
 - Milestones 04 and 05 created typed entities, default sections, notes, contributions, mentions, and backlinks.
+- Milestone 04.5 replaced quest/plot-arc active surfaces with Storylines and added `core_edit_policy`, `character_owner_gm`, allowlisted field-visibility columns, and split public/GM typed facts.
 - Campaign membership and role helpers are already RLS-tested.
 - Section-level visibility/editability is the main MVP mechanism for mixed-visibility records.
 - Some structured GM-only fields, especially NPC `real_status_id`, remain in typed tables but are exposed only through safe read surfaces.
@@ -50,13 +54,14 @@ This milestone should make visibility behavior trustworthy across entity summari
 
 ### 1. Audit Existing Read Surfaces
 
-Review all app data reads added in milestones 03-05.
+Review all app data reads added in milestones 03-05, including the `04.5` typed-field and owner-sensitive additions.
 
 Classify each read as:
 
 - safe for all active campaign members
 - owner/GM only
 - author-private
+- character-owner-sensitive
 - creator-private
 - placeholder/reference resolution only
 
@@ -66,6 +71,8 @@ Rules:
 - Mixed player/GM surfaces must use safe views or RPCs.
 - Views must use `security_invoker = true`, or the behavior must be implemented as RLS-gated RPCs.
 - Any read that includes GM-only columns must be owner/GM gated.
+- Any read that includes `character_owner_gm` data must be gated to the controlling user plus owner/GM.
+- Any read that includes allowlisted typed fields must enforce those per-field visibility columns before data reaches the client.
 - Any read that can reveal hidden source existence must be explicitly tested.
 
 ### 2. Define Effective Role/View Context
@@ -97,6 +104,7 @@ Ensure entity summary reads obey:
 - `shared`: visible to active campaign members
 - `gm_only`: visible to owners/GMs
 - `private`: visible only to creator/author
+- `character_owner_gm`: visible only to the Character controlling user plus owners/GMs
 - soft-deleted: excluded from normal summaries
 
 Rules:
@@ -104,6 +112,8 @@ Rules:
 - Player summary reads must not include hidden labels, status labels, parent labels, image alt text, or type-specific metadata for inaccessible records.
 - GM summary reads may include GM-only records.
 - Private records are still author-only unless a future product decision changes this.
+- `character_owner_gm` records and child rows must not appear for unrelated players in directories, inline pickers, search, command palette, or mention suggestions.
+- Summary projections must respect allowlisted typed-field visibility columns and split public/GM typed facts, including NPC public versus GM locations and Faction public versus true goals.
 - Directory counts, filters, and empty states must not reveal hidden record existence to unauthorized users.
 - Command palette and mention suggestions must consume the same safe summaries.
 
@@ -114,12 +124,16 @@ For every entity type, verify detail read shapes are role-safe.
 Rules:
 
 - Player reads include only player-visible typed fields and visible sections.
+- Character controlling-user reads include `character_owner_gm` typed fields and sections where allowed, without inheriting GM-only fields.
 - Owner/GM reads include GM-visible typed fields and sections.
 - NPC player reads include `apparent_status_id` only.
+- NPC player reads include only public location fields; owner/GM reads may include GM true-location fields.
 - NPC owner/GM reads include `real_status_id`, `apparent_status_id`, and the apparent override state if implemented.
-- Plot arcs and encounters default to owner/GM-only reads.
+- Faction and Location reads must omit GM-only allowlisted fields for unauthorized users while preserving shared fields.
+- Storylines and encounters default to owner/GM-only reads when their record visibility requires it.
 - Private timeline events are visible only to their creator.
-- Detail read responses must include explicit capability flags for UI controls, such as `can_edit`, `can_delete`, `can_add_note`, and `can_add_contribution`.
+- Detail read responses must include explicit capability flags for UI controls, including at least `can_edit_core`, `can_manage_visibility`, `can_delete`, `can_add_note`, and `can_add_contribution`.
+- Core edit capability must be derived from `campaign_entities.core_edit_policy`, controlling-user context, creator context, and GM/owner role context rather than inferred from record visibility alone.
 
 ### 5. Implement NPC Apparent/Real Status Behavior
 
@@ -143,9 +157,12 @@ Rules:
 - Shared notes respect attached target visibility.
 - GM-only notes are owner/GM-visible only.
 - Private notes are author-only.
+- `character_owner_gm` sections and child rows are visible only to the controlling user plus owners/GMs.
 - GM-only sections are owner/GM-visible only.
 - Player contribution sections show attributed player-authored rows.
 - Player contribution controls appear only when the edit policy allows append/contribution behavior.
+- Direct contribution reads must enforce both parent section visibility and contribution-row visibility.
+- Contribution visibility must never broaden access beyond the parent entity/section visibility envelope.
 - Mention rendering resolves current visibility state and does not trust stale mention labels.
 - Backlinks omit hidden sources for unauthorized users.
 
@@ -177,11 +194,13 @@ Allowed states:
 Rules:
 
 - Unauthorized players get generic private/unavailable/deleted placeholders without labels.
-- For arbitrary requested ids, unauthorized callers should receive coarse `inaccessible` or `hard_deleted` states rather than precise `private` or `gm_only` states.
+- For arbitrary requested ids, unauthorized callers should receive coarse `inaccessible` or `hard_deleted` states rather than precise `private`, `gm_only`, or `character_owner_gm` distinctions.
 - More specific states such as `deleted`, `private`, or `gm_only` are allowed only when the caller already has a legitimate visible source context for the reference or has management/restore permission.
+- `character_owner_gm` references should usually collapse to generic `inaccessible` placeholders for unrelated players rather than introducing a separate externally visible placeholder state.
 - GMs and users with restore permission may get more specific deleted/archived context.
 - Hard-deleted references remain unavailable.
 - Placeholder labels must be short and must not expose hidden entity names.
+- `can_request_access` is a reserved field for future workflows and should remain `false` in MVP unless an explicit access-request feature is implemented later.
 - Use this surface for mentions, backlinks, relationship placeholders later, open tabs later, pins later, recent activity later, and direct inaccessible routes.
 
 ### 8. Add Player And GM Detail Framing
@@ -221,10 +240,13 @@ Add compact controls where users can set allowed visibility:
 - note visibility
 - section visibility for owners/GMs where permitted
 - contribution visibility where permitted
+- allowlisted typed-field visibility for the specific `04.5` fields that support it
 
 Rules:
 
 - Controls must show only allowed options for the current user's role.
+- Controls for `04.5` typed fields must be limited to the explicit allowlist; do not expose a generic field-permission editor.
+- `character_owner_gm` must appear only where the controlling-user relationship is explicit, such as Character owner-sensitive data and Character hooks.
 - Controls must not imply private content can be made visible by unauthorized users.
 - Visibility changes that affect other users should require a clear save action.
 - Do not build a full permission matrix editor.
@@ -236,8 +258,13 @@ Database/RLS/RPC tests:
 - player cannot read GM-only entity summary labels
 - player cannot read GM-only detail fields
 - player cannot read NPC real status
+- unrelated player cannot read `character_owner_gm` Character quick stats, backstory, hooks, or other owner-sensitive rows
+- controlling user can read `character_owner_gm` Character data without gaining GM-only fields
 - player cannot infer GM-only records through directory counts or command palette results
+- player cannot read GM-only allowlisted typed fields such as Faction leader/headquarters or Location controlling faction/owner/ruler
+- player sees only public split fields such as NPC public locations and Faction public goal, while GM/owner reads include the GM truth fields
 - private notes/timeline/contributions are author-only
+- contribution-row reads cannot widen visibility beyond the parent section/entity visibility
 - GM can read GM-only sections and records
 - GM player-preview read uses player-safe projection where implemented
 - mention/backlink reads do not expose hidden source labels
@@ -258,10 +285,15 @@ Playwright smoke tests:
 
 - seed a campaign with owner/GM/player users
 - create shared and GM-only NPCs
+- create a Character with `character_owner_gm` quick stats and hooks for one player
+- create Faction/Location records with GM-only allowlisted fields
 - verify player directory cannot see GM-only NPC
 - verify player NPC detail omits real status
+- verify unrelated player cannot see `character_owner_gm` Character data while the controlling user can
+- verify player detail omits GM-only allowlisted typed fields and GM true-location/true-goal values
 - verify GM detail shows real/apparent status controls
 - verify private note is author-only
+- verify contribution visibility does not bypass hidden parent section/entity visibility
 - verify inaccessible mention renders as generic placeholder
 
 ### 12. Verify Locally
@@ -293,6 +325,7 @@ Any manual verification must use at least owner/GM/player personas and document 
 
 - Player-facing and mixed-visibility reads use safe server read surfaces.
 - Client UI does not receive GM-only fields in player-safe responses.
+- Client UI does not receive `character_owner_gm` or GM-only allowlisted typed fields for unauthorized users.
 - NPC real status is GM-only and apparent status is player-visible.
 - Private content is author-only.
 - GMs can clearly distinguish GM canon, player-visible canon, and player-authored knowledge.
@@ -326,7 +359,7 @@ Author-private override:
 
 ## Review Notes
 
-Two q-review-plan passes were applied to this milestone draft.
+Three q-review-plan passes were applied to this milestone draft.
 
 Pass 1 corrections incorporated:
 
@@ -337,3 +370,10 @@ Pass 2 corrections incorporated:
 
 - Added explicit tests for arbitrary reference-resolution enumeration leakage.
 - Kept author-private content author-only as a documented product/security decision instead of an unresolved implementation question.
+
+Pass 3 corrections incorporated:
+
+- Expanded the read-surface audit scope to explicitly include the `04.5` typed-field and owner-sensitive additions.
+- Clarified that contribution-row visibility cannot bypass parent entity/section visibility.
+- Clarified that `character_owner_gm` references collapse to generic inaccessible placeholders for unrelated players.
+- Marked `can_request_access` as reserved and effectively `false` for MVP unless a future access-request workflow is explicitly added.

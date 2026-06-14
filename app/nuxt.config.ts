@@ -1,4 +1,9 @@
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { designTokens } from './design/tokens';
+
+const appRoot = resolve(fileURLToPath(new URL('.', import.meta.url)));
+const projectRoot = resolve(appRoot, '..');
 
 export default defineNuxtConfig({
   ssr: false,
@@ -35,13 +40,22 @@ export default defineNuxtConfig({
     },
   },
   vite: {
+    resolve: {
+      alias: {
+        'vee-validate': resolve(projectRoot, 'node_modules/vee-validate/dist/vee-validate.mjs'),
+        '@vee-validate/zod': resolve(
+          projectRoot,
+          'node_modules/@vee-validate/zod/dist/vee-validate-zod.mjs',
+        ),
+      },
+    },
     optimizeDeps: {
       include: [
         '@tanstack/vue-query',
-        '@vee-validate/zod',
         '@vue/devtools-api',
         'lucide-vue-next',
         'vee-validate',
+        '@vee-validate/zod',
         'zod',
       ],
     },

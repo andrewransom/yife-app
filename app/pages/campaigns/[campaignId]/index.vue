@@ -1,15 +1,29 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { Archive, ChevronRight, PanelRightClose, Plus, Search, Settings } from 'lucide-vue-next';
+import {
+  Archive,
+  ChevronRight,
+  List,
+  PanelRightClose,
+  Plus,
+  Search,
+  Settings,
+  Timer,
+} from 'lucide-vue-next';
 import { storeToRefs } from 'pinia';
 import { useRoute } from '#imports';
+import { useCurrentUser } from '~/composables/auth/useCurrentUser';
 import { useProtectedAppBootstrap } from '~/composables/auth/useProtectedAppBootstrap';
 import { useCampaignByIdQuery } from '~/composables/campaigns/useCampaignByIdQuery';
-import { useCampaignMembershipSummaryQuery } from '~/composables/campaigns/useCampaignMembershipSummaryQuery';
+import { useCampaignRoleViewContext } from '~/composables/campaigns/useCampaignRoleViewContext';
+import { useCurrentSessionQuery } from '~/composables/entities/useCurrentSessionQuery';
 import { useCampaignEntitySummariesQuery } from '~/composables/entities/useCampaignEntitySummariesQuery';
+import { useEncountersQuery } from '~/composables/entities/useEncountersQuery';
 import { useEntityDetailQuery } from '~/composables/entities/useEntityDetailQuery';
 import { useEntityStatusOptionsQuery } from '~/composables/entities/useEntityStatusOptionsQuery';
 import { useEntityTypeOptionsQuery } from '~/composables/entities/useEntityTypeOptionsQuery';
+import { useSessionsQuery } from '~/composables/entities/useSessionsQuery';
+import { useStorylinesQuery } from '~/composables/entities/useStorylinesQuery';
 import { useUiStore } from '~/stores/ui';
 
 definePageMeta({
@@ -18,22 +32,29 @@ definePageMeta({
 
 const route = useRoute();
 const uiStore = useUiStore();
-const { isRightPanelCollapsed } = storeToRefs(uiStore);
+const { activeViewPreference, isRightPanelCollapsed, selectedEntityId } = storeToRefs(uiStore);
 const bootstrap = useProtectedAppBootstrap();
+const currentUser = useCurrentUser();
 
 const campaignId = computed(() => String(route.params.campaignId || ''));
 const campaignQuery = useCampaignByIdQuery(campaignId, {
   enabled: bootstrap.isReady,
 });
-const membershipQuery = useCampaignMembershipSummaryQuery(campaignId, {
+const roleViewContext = useCampaignRoleViewContext(campaignId, {
   enabled: computed(() => bootstrap.isReady.value && Boolean(campaignQuery.data.value)),
 });
 
 const campaign = computed(() => campaignQuery.data.value);
-const membership = computed(() => membershipQuery.data.value);
+const membership = computed(() => roleViewContext.membershipQuery.data.value);
 const selectedTypeKey = ref('all');
 const selectedStatusKey = ref('');
 const directorySearch = ref('');
+const storylineType = ref('');
+const storylineCategoryLabel = ref('');
+const storylinePriorityLabel = ref('');
+const storylineMajorMode = ref<'all' | 'major' | 'minor'>('all');
+const encounterTypeLabel = ref('');
+const relatedSessionEntityId = ref('');
 const isCreateOpen = ref(false);
 const isLoading = computed(
   () =>
@@ -44,15 +65,27 @@ const isLoading = computed(
 const isUnavailable = computed(
   () => bootstrap.isReady.value && !isLoading.value && !campaign.value,
 );
-const roleLabel = computed(
-  () => membership.value?.role_keys[0] ?? campaign.value?.role_keys[0] ?? 'member',
+const roleLabel = computed(() => {
+  const roles = membership.value?.role_keys ?? campaign.value?.role_keys ?? [];
+
+  if (roleViewContext.workspaceMode.value === 'mixed') {
+    return 'gm + player';
+  }
+
+  if (roles.includes('owner')) {
+    return 'owner';
+  }
+
+  if (roles.includes('game_master')) {
+    return 'gm';
+  }
+
+  return roles[0] ?? 'member';
+});
+const activeViewLabel = computed(() =>
+  roleViewContext.activeRoleView.value === 'gm' ? 'GM view' : 'Player view',
 );
-const canCreateEntities = computed(() =>
-  Boolean(
-    membership.value?.role_keys.includes('owner') ||
-    membership.value?.role_keys.includes('game_master'),
-  ),
-);
+const canCreateEntities = computed(() => Boolean(roleViewContext.isGameMaster.value));
 const overviewText = computed(
   () =>
     campaign.value?.description ||
@@ -63,24 +96,92 @@ const isBootstrapError = bootstrap.isError;
 const entityTypesQuery = useEntityTypeOptionsQuery(campaignId, {
   enabled: computed(() => bootstrap.isReady.value && Boolean(campaign.value)),
 });
+const currentSessionQuery = useCurrentSessionQuery(campaignId, {
+  enabled: computed(() => bootstrap.isReady.value && Boolean(campaign.value)),
+  previewAsPlayer: computed(() => roleViewContext.isPlayerPreview.value),
+});
 const entitySummariesQuery = useCampaignEntitySummariesQuery(campaignId, {
   enabled: computed(() => bootstrap.isReady.value && Boolean(campaign.value)),
 });
+const sessionsQuery = useSessionsQuery(
+  campaignId,
+  {
+    statusKey: selectedStatusKey,
+    search: directorySearch,
+    includeCancelled: computed(() => selectedStatusKey.value === 'cancelled'),
+  },
+  {
+    enabled: computed(() => bootstrap.isReady.value && Boolean(campaign.value)),
+    previewAsPlayer: computed(() => roleViewContext.isPlayerPreview.value),
+  },
+);
+const storylinesQuery = useStorylinesQuery(
+  campaignId,
+  {
+    statusKey: selectedStatusKey,
+    search: directorySearch,
+    storylineType,
+    categoryLabel: storylineCategoryLabel,
+    priorityLabel: storylinePriorityLabel,
+    majorMode: storylineMajorMode,
+  },
+  {
+    enabled: computed(() => bootstrap.isReady.value && Boolean(campaign.value)),
+    previewAsPlayer: computed(() => roleViewContext.isPlayerPreview.value),
+  },
+);
+const encountersQuery = useEncountersQuery(
+  campaignId,
+  {
+    statusKey: selectedStatusKey,
+    search: directorySearch,
+    encounterTypeLabel,
+    relatedSessionEntityId,
+  },
+  {
+    enabled: computed(() => bootstrap.isReady.value && Boolean(campaign.value)),
+    previewAsPlayer: computed(() => roleViewContext.isPlayerPreview.value),
+  },
+);
 const statusOptionsQuery = useEntityStatusOptionsQuery(campaignId, selectedTypeKey, {
   enabled: computed(() => selectedTypeKey.value !== 'all'),
 });
-const selectedEntityId = computed(() => uiStore.selectedEntityId);
 const entityDetailQuery = useEntityDetailQuery(selectedEntityId, {
   enabled: computed(() => bootstrap.isReady.value && Boolean(selectedEntityId.value)),
+  previewAsPlayer: computed(() => roleViewContext.isPlayerPreview.value),
 });
 const entityTypes = computed(() => entityTypesQuery.data.value ?? []);
 const entitySummaries = computed(() => entitySummariesQuery.data.value ?? []);
+const directorySummaries = computed(() => {
+  if (selectedTypeKey.value === 'session') {
+    return sessionsQuery.data.value ?? [];
+  }
+
+  if (selectedTypeKey.value === 'storyline') {
+    return storylinesQuery.data.value ?? [];
+  }
+
+  if (selectedTypeKey.value === 'encounter') {
+    return encountersQuery.data.value ?? [];
+  }
+
+  return entitySummaries.value;
+});
 const statusOptions = computed(() =>
   selectedTypeKey.value === 'all' ? [] : (statusOptionsQuery.data.value ?? []),
 );
 const selectedEntityDetail = computed(() => entityDetailQuery.data.value);
+const currentSession = computed(() => currentSessionQuery.data.value);
 const isDirectoryLoading = computed(
-  () => entitySummariesQuery.isPending.value || entityTypesQuery.isPending.value,
+  () =>
+    entityTypesQuery.isPending.value ||
+    (selectedTypeKey.value === 'session'
+      ? sessionsQuery.isPending.value
+      : selectedTypeKey.value === 'storyline'
+        ? storylinesQuery.isPending.value
+        : selectedTypeKey.value === 'encounter'
+          ? encountersQuery.isPending.value
+          : entitySummariesQuery.isPending.value),
 );
 const isDetailLoading = computed(
   () => entityDetailQuery.isPending.value || entityDetailQuery.isFetching.value,
@@ -90,6 +191,11 @@ const selectedEntityMissing = computed(
     Boolean(selectedEntityId.value) &&
     !entityDetailQuery.isPending.value &&
     !selectedEntityDetail.value,
+);
+const isSelectedEntityCharacterController = computed(
+  () =>
+    Boolean(selectedEntityDetail.value?.controlling_user_id) &&
+    selectedEntityDetail.value?.controlling_user_id === currentUser.value?.id,
 );
 
 watch(
@@ -104,6 +210,12 @@ watch(
 
 watch(selectedTypeKey, () => {
   selectedStatusKey.value = '';
+  storylineType.value = '';
+  storylineCategoryLabel.value = '';
+  storylinePriorityLabel.value = '';
+  storylineMajorMode.value = 'all';
+  encounterTypeLabel.value = '';
+  relatedSessionEntityId.value = '';
 });
 
 watch(
@@ -128,7 +240,26 @@ function openCreate() {
 
 function handleCreated(entityId: string) {
   uiStore.selectEntity(entityId);
+  uiStore.setActiveViewPreference('detail');
   isCreateOpen.value = false;
+}
+
+function handleSelectEntity(entityId: string) {
+  uiStore.selectEntity(entityId);
+  uiStore.setActiveViewPreference('detail');
+}
+
+function openTimelineView() {
+  uiStore.setActiveViewPreference('timeline');
+}
+
+function openDirectoryView() {
+  uiStore.setActiveViewPreference(selectedEntityId.value ? 'detail' : 'directory');
+}
+
+function handleTimelineOpen(entityId: string) {
+  uiStore.selectEntity(entityId);
+  uiStore.setActiveViewPreference('detail');
 }
 </script>
 
@@ -147,13 +278,46 @@ function handleCreated(entityId: string) {
         {{ campaign?.name || 'Campaign workspace' }}
       </h1>
       <YIconButton :icon="Search" label="Search campaign" disabled />
+      <div class="flex items-center gap-1">
+        <YIconButton
+          :icon="List"
+          label="Open records"
+          :color="activeViewPreference === 'timeline' ? 'neutral' : 'primary'"
+          :variant="activeViewPreference === 'timeline' ? 'ghost' : 'soft'"
+          @click="openDirectoryView"
+        />
+        <YIconButton
+          :icon="Timer"
+          label="Open timeline"
+          :color="activeViewPreference === 'timeline' ? 'primary' : 'neutral'"
+          :variant="activeViewPreference === 'timeline' ? 'soft' : 'ghost'"
+          @click="openTimelineView"
+        />
+      </div>
+      <select
+        v-if="roleViewContext.workspaceMode.value === 'mixed'"
+        :value="roleViewContext.selectedViewPreference.value"
+        class="h-8 rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
+        @change="
+          roleViewContext.setSelectedViewPreference(
+            ($event.target as HTMLSelectElement).value as 'gm' | 'player',
+          )
+        "
+      >
+        <option value="gm">GM view</option>
+        <option value="player">Player view</option>
+      </select>
       <YIconButton
         :icon="Plus"
         label="Create record"
         :disabled="!canCreateEntities"
         @click="openCreate"
       />
-      <YIconButton :icon="Settings" label="Campaign settings" disabled />
+      <YIconButton
+        :icon="Settings"
+        label="Campaign settings"
+        :to="`/campaigns/${campaignId}/settings`"
+      />
       <YIconButton
         :icon="PanelRightClose"
         label="Toggle context panel"
@@ -192,22 +356,40 @@ function handleCreated(entityId: string) {
           class="flex min-h-10 items-center justify-between border-b border-[var(--yife-border)] px-3"
         >
           <h2 class="text-sm font-semibold">Directory</h2>
-          <YStatusBadge :label="roleLabel" tone="info" />
+          <div class="flex items-center gap-2">
+            <YStatusBadge :label="roleLabel" tone="info" />
+            <YStatusBadge
+              :label="activeViewLabel"
+              :tone="roleViewContext.isPlayerPreview.value ? 'warning' : 'success'"
+            />
+          </div>
         </div>
         <EntityDirectoryShell
-          :summaries="entitySummaries"
+          :summaries="directorySummaries"
           :entity-types="entityTypes"
           :statuses="statusOptions"
           :selected-entity-id="selectedEntityId"
           :selected-type-key="selectedTypeKey"
           :status-key="selectedStatusKey"
           :search="directorySearch"
+          :storyline-type="storylineType"
+          :storyline-category-label="storylineCategoryLabel"
+          :storyline-priority-label="storylinePriorityLabel"
+          :storyline-major-mode="storylineMajorMode"
+          :encounter-type-label="encounterTypeLabel"
+          :related-session-entity-id="relatedSessionEntityId"
           :is-loading="isDirectoryLoading"
           :can-create="canCreateEntities"
           @update:selected-type-key="selectedTypeKey = $event"
           @update:status-key="selectedStatusKey = $event"
           @update:search="directorySearch = $event"
-          @select="uiStore.selectEntity($event)"
+          @update:storyline-type="storylineType = $event"
+          @update:storyline-category-label="storylineCategoryLabel = $event"
+          @update:storyline-priority-label="storylinePriorityLabel = $event"
+          @update:storyline-major-mode="storylineMajorMode = $event"
+          @update:encounter-type-label="encounterTypeLabel = $event"
+          @update:related-session-entity-id="relatedSessionEntityId = $event"
+          @select="handleSelectEntity"
           @create="openCreate"
         />
       </aside>
@@ -218,22 +400,39 @@ function handleCreated(entityId: string) {
             :campaign-id="campaignId"
             :entity-types="entityTypes"
             :initial-type-key="selectedTypeKey"
+            :current-session-entity-id="currentSession?.session_entity_id ?? null"
             @created="handleCreated"
             @cancel="isCreateOpen = false"
           />
         </YPanelSurface>
 
         <EntityDetailShell
-          v-else-if="selectedEntityId"
+          v-else-if="selectedEntityId && activeViewPreference !== 'timeline'"
           :detail="selectedEntityDetail"
           :is-loading="isDetailLoading"
           :is-unavailable="selectedEntityMissing"
+          :active-role-view="roleViewContext.activeRoleView.value"
+          :is-player-preview="roleViewContext.isPlayerPreview.value"
+          :show-inline-context="isRightPanelCollapsed"
+        />
+
+        <TimelineEventListPanel
+          v-else-if="activeViewPreference === 'timeline'"
+          :campaign-id="campaignId"
+          heading="Timeline"
+          :active-role-view="roleViewContext.activeRoleView.value"
+          :is-player-preview="roleViewContext.isPlayerPreview.value"
+          @open="handleTimelineOpen"
         />
 
         <YPanelSurface v-else heading="Campaign Overview">
           <div class="flex flex-wrap items-center gap-2 border-b border-[var(--yife-border)] pb-3">
             <YStatusBadge :label="campaign?.status_label || 'Active'" tone="success" />
             <YStatusBadge :label="roleLabel" tone="info" />
+            <YStatusBadge
+              :label="activeViewLabel"
+              :tone="roleViewContext.isPlayerPreview.value ? 'warning' : 'success'"
+            />
           </div>
           <div class="grid gap-3 pt-3 lg:grid-cols-[1fr_14rem]">
             <div>
@@ -252,6 +451,19 @@ function handleCreated(entityId: string) {
               "
             />
           </div>
+          <div class="mt-3 grid gap-3 xl:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
+            <CurrentSessionPanel
+              :campaign-id="campaignId"
+              :active-role-view="roleViewContext.activeRoleView.value"
+              :is-player-preview="roleViewContext.isPlayerPreview.value"
+            />
+            <CampaignActivityPanel
+              :campaign-id="campaignId"
+              :active-role-view="roleViewContext.activeRoleView.value"
+              :is-player-preview="roleViewContext.isPlayerPreview.value"
+            />
+          </div>
+          <CampaignNotesPanel :campaign-id="campaignId" class="mt-3" />
         </YPanelSurface>
       </section>
 
@@ -259,12 +471,72 @@ function handleCreated(entityId: string) {
         v-if="!isRightPanelCollapsed"
         class="hidden border-l border-[var(--yife-border)] bg-[var(--yife-surface)] p-3 xl:block"
       >
-        <YPanelSurface heading="Context" muted>
-          <div class="space-y-3 text-sm text-[var(--yife-text-muted)]">
-            <p>Session context, recent activity, backlinks, and related records will live here.</p>
-            <YStatusBadge label="Placeholder" tone="info" />
-          </div>
-        </YPanelSurface>
+        <div v-if="selectedEntityDetail" class="space-y-3">
+          <EntityNotesWidget
+            :entity-id="selectedEntityDetail.entity_id"
+            :active-role-view="roleViewContext.activeRoleView.value"
+            :is-player-preview="roleViewContext.isPlayerPreview.value"
+            :is-character-controller="isSelectedEntityCharacterController"
+          />
+          <EntityRelationshipsPanel
+            :campaign-id="selectedEntityDetail.campaign_id"
+            :entity-id="selectedEntityDetail.entity_id"
+            :can-manage="selectedEntityDetail.can_manage_visibility"
+            :active-role-view="roleViewContext.activeRoleView.value"
+            :is-player-preview="roleViewContext.isPlayerPreview.value"
+            :is-character-controller="isSelectedEntityCharacterController"
+          />
+          <EntityRelatedRecordsPanel
+            :entity-id="selectedEntityDetail.entity_id"
+            :active-role-view="roleViewContext.activeRoleView.value"
+            :is-player-preview="roleViewContext.isPlayerPreview.value"
+            :is-character-controller="isSelectedEntityCharacterController"
+          />
+          <EntityBacklinksPanel
+            :entity-id="selectedEntityDetail.entity_id"
+            :active-role-view="roleViewContext.activeRoleView.value"
+            :is-player-preview="roleViewContext.isPlayerPreview.value"
+            :is-character-controller="isSelectedEntityCharacterController"
+          />
+          <TimelineEventListPanel
+            :campaign-id="campaignId"
+            heading="Timeline Context"
+            :related-entity-id="selectedEntityDetail.entity_id"
+            compact
+            :show-filters="false"
+            :active-role-view="roleViewContext.activeRoleView.value"
+            :is-player-preview="roleViewContext.isPlayerPreview.value"
+            @open="handleTimelineOpen"
+          />
+        </div>
+        <div v-else class="space-y-3">
+          <CurrentSessionPanel
+            :campaign-id="campaignId"
+            :active-role-view="roleViewContext.activeRoleView.value"
+            :is-player-preview="roleViewContext.isPlayerPreview.value"
+          />
+          <YPanelSurface heading="Context" muted>
+            <YEmptyState
+              heading="No record selected"
+              text="Select a record to inspect notes, relationships, backlinks, and timeline context."
+            />
+          </YPanelSurface>
+          <CampaignActivityPanel
+            :campaign-id="campaignId"
+            :active-role-view="roleViewContext.activeRoleView.value"
+            :is-player-preview="roleViewContext.isPlayerPreview.value"
+            :limit="6"
+          />
+          <TimelineEventListPanel
+            :campaign-id="campaignId"
+            heading="Campaign Timeline"
+            compact
+            :show-filters="false"
+            :active-role-view="roleViewContext.activeRoleView.value"
+            :is-player-preview="roleViewContext.isPlayerPreview.value"
+            @open="handleTimelineOpen"
+          />
+        </div>
       </aside>
     </div>
   </div>

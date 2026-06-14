@@ -5,6 +5,7 @@ import { computed, watch, ref } from 'vue';
 import { Save } from 'lucide-vue-next';
 import { useCurrentUser } from '~/composables/auth/useCurrentUser';
 import { useCampaignMemberProfilesQuery } from '~/composables/campaigns/useCampaignMemberProfilesQuery';
+import { useCampaignEntitySummariesQuery } from '~/composables/entities/useCampaignEntitySummariesQuery';
 import { useCampaignOptionsQuery } from '~/composables/entities/useCampaignOptionsQuery';
 import { useCreateEntityMutation } from '~/composables/entities/useCreateEntityMutation';
 import { useEntityStatusOptionsQuery } from '~/composables/entities/useEntityStatusOptionsQuery';
@@ -20,6 +21,7 @@ const props = defineProps<{
   campaignId: string;
   entityTypes: EntityTypeOption[];
   initialTypeKey?: string;
+  currentSessionEntityId?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -61,21 +63,26 @@ const optionGroupKey = computed(() => {
 const statusesQuery = useEntityStatusOptionsQuery(props.campaignId, entityTypeKey, {
   enabled: computed(() => Boolean(entityTypeKey.value)),
 });
-const optionsQuery = useCampaignOptionsQuery(
-  props.campaignId,
-  optionGroupKey,
-  {
-    enabled: computed(() => Boolean(optionGroupKey.value)),
-  },
-);
+const optionsQuery = useCampaignOptionsQuery(props.campaignId, optionGroupKey, {
+  enabled: computed(() => Boolean(optionGroupKey.value)),
+});
 const membersQuery = useCampaignMemberProfilesQuery(props.campaignId, {
   enabled: computed(() => entityTypeKey.value === 'character'),
+});
+const summariesQuery = useCampaignEntitySummariesQuery(props.campaignId, {
+  enabled: computed(() => ['encounter', 'timeline_event'].includes(entityTypeKey.value)),
 });
 const createEntity = useCreateEntityMutation();
 const isCreating = computed(() => createEntity.isPending.value);
 const statuses = computed(() => statusesQuery.data.value ?? []);
 const options = computed(() => optionsQuery.data.value ?? []);
 const members = computed(() => membersQuery.data.value ?? []);
+const sessionOptions = computed(() =>
+  (summariesQuery.data.value ?? []).filter((summary) => summary.entity_type_key === 'session'),
+);
+const storylineOptions = computed(() =>
+  (summariesQuery.data.value ?? []).filter((summary) => summary.entity_type_key === 'storyline'),
+);
 
 const { defineField, errors, handleSubmit, resetForm, setFieldValue } =
   useForm<CreateEntityFormInput>({
@@ -92,6 +99,8 @@ const { defineField, errors, handleSubmit, resetForm, setFieldValue } =
       priorityOptionId: '',
       encounterTypeOptionId: '',
       eventTypeOptionId: '',
+      relatedSessionEntityId: props.currentSessionEntityId ?? '',
+      relatedStorylineEntityId: '',
       storylineType: 'quest',
       sessionDate: '',
       dateExpression: '',
@@ -110,6 +119,8 @@ const [locationTypeOptionId, locationTypeAttrs] = defineField('locationTypeOptio
 const [priorityOptionId, priorityAttrs] = defineField('priorityOptionId');
 const [encounterTypeOptionId, encounterTypeAttrs] = defineField('encounterTypeOptionId');
 const [eventTypeOptionId, eventTypeAttrs] = defineField('eventTypeOptionId');
+const [relatedSessionEntityId, relatedSessionAttrs] = defineField('relatedSessionEntityId');
+const [relatedStorylineEntityId, relatedStorylineAttrs] = defineField('relatedStorylineEntityId');
 const [storylineType, storylineTypeAttrs] = defineField('storylineType');
 const [sessionDate, sessionDateAttrs] = defineField('sessionDate');
 const [dateExpression, dateExpressionAttrs] = defineField('dateExpression');
@@ -128,6 +139,10 @@ watch(
 watch(entityTypeKey, (value) => {
   setFieldValue('entityTypeKey', value);
   formError.value = '';
+
+  if (['encounter', 'timeline_event'].includes(value) && !relatedSessionEntityId.value) {
+    relatedSessionEntityId.value = props.currentSessionEntityId ?? '';
+  }
 });
 
 watch(
@@ -139,6 +154,20 @@ watch(
     }
     if (entityTypeKey.value === 'npc' && !realStatusId.value && firstStatus) {
       realStatusId.value = firstStatus;
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.currentSessionEntityId,
+  (value) => {
+    if (
+      value &&
+      !relatedSessionEntityId.value &&
+      ['encounter', 'timeline_event'].includes(entityTypeKey.value)
+    ) {
+      relatedSessionEntityId.value = value;
     }
   },
   { immediate: true },
@@ -283,7 +312,10 @@ const onSubmit = handleSubmit(async (values) => {
       </YFormField>
     </div>
 
-    <div v-else-if="statuses.length || entityTypeKey === 'location'" class="grid gap-3 md:grid-cols-2">
+    <div
+      v-else-if="statuses.length || entityTypeKey === 'location'"
+      class="grid gap-3 md:grid-cols-2"
+    >
       <YFormField v-if="statuses.length" label="Status" name="statusId">
         <select
           v-model="statusId"
@@ -362,6 +394,48 @@ const onSubmit = handleSubmit(async (values) => {
           <option value="" disabled>Type</option>
           <option v-for="option in options" :key="option.id" :value="option.id">
             {{ option.label }}
+          </option>
+        </select>
+      </YFormField>
+
+      <YFormField
+        v-if="['encounter', 'timeline_event'].includes(entityTypeKey)"
+        label="Related session"
+        name="relatedSessionEntityId"
+      >
+        <select
+          v-model="relatedSessionEntityId"
+          v-bind="relatedSessionAttrs"
+          class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
+        >
+          <option value="">No session</option>
+          <option
+            v-for="session in sessionOptions"
+            :key="session.entity_id"
+            :value="session.entity_id"
+          >
+            {{ session.list_caption }}
+          </option>
+        </select>
+      </YFormField>
+
+      <YFormField
+        v-if="entityTypeKey === 'encounter'"
+        label="Related storyline"
+        name="relatedStorylineEntityId"
+      >
+        <select
+          v-model="relatedStorylineEntityId"
+          v-bind="relatedStorylineAttrs"
+          class="h-8 w-full rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface)] px-2 text-sm"
+        >
+          <option value="">No storyline</option>
+          <option
+            v-for="storyline in storylineOptions"
+            :key="storyline.entity_id"
+            :value="storyline.entity_id"
+          >
+            {{ storyline.list_caption }}
           </option>
         </select>
       </YFormField>

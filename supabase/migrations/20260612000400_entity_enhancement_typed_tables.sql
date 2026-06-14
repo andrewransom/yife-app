@@ -911,7 +911,11 @@ as $$
     public.entity_ref_label(ce.related_session_entity_id),
     case when public.can_view_campaign_entity(e.related_storyline_entity_id) then e.related_storyline_entity_id else null end,
     public.entity_ref_label(e.related_storyline_entity_id),
-    coalesce(cm.display_name_override, up.display_name),
+    case
+      when public.can_view_entity_visibility(ce.campaign_id, 'character_owner_gm', public.current_user_id(), ce.id)
+        then coalesce(cm.display_name_override, up.display_name)
+      else null
+    end,
     npc_apparent.label,
     location_type.label,
     st.storyline_type,

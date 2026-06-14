@@ -6,12 +6,20 @@ import type { CharacterHook } from './types';
 
 export function useCharacterHooksQuery(
   characterEntityId: MaybeRefOrGetter<string | null>,
-  options?: { enabled?: MaybeRefOrGetter<boolean> },
+  options?: {
+    enabled?: MaybeRefOrGetter<boolean>;
+    previewAsPlayer?: MaybeRefOrGetter<boolean>;
+  },
 ) {
   const client = useYifeSupabaseClient();
 
   return useQuery({
-    queryKey: computed(() => entityQueryKeys.characterHooks(toValue(characterEntityId) ?? 'none')),
+    queryKey: computed(() =>
+      entityQueryKeys.characterHooks(
+        toValue(characterEntityId) ?? 'none',
+        options?.previewAsPlayer ? Boolean(toValue(options.previewAsPlayer)) : false,
+      ),
+    ),
     enabled: computed(
       () =>
         Boolean(toValue(characterEntityId)) &&
@@ -26,6 +34,8 @@ export function useCharacterHooksQuery(
 
       const { data, error } = await client.rpc('get_character_hooks', {
         p_character_entity_id: id,
+        p_role_view:
+          options?.previewAsPlayer && toValue(options.previewAsPlayer) ? 'player' : undefined,
       });
 
       if (error) {

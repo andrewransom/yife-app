@@ -1523,6 +1523,143 @@ export type Database = {
           },
         ]
       }
+      entity_relationships: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          id: string
+          relationship_type_id: string
+          source_entity_id: string
+          target_entity_id: string
+          updated_at: string
+          updated_by: string
+          visibility: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          id?: string
+          relationship_type_id: string
+          source_entity_id: string
+          target_entity_id: string
+          updated_at?: string
+          updated_by: string
+          visibility: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id?: string
+          relationship_type_id?: string
+          source_entity_id?: string
+          target_entity_id?: string
+          updated_at?: string
+          updated_by?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_relationships_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_relationships_relationship_type_id_fkey"
+            columns: ["relationship_type_id"]
+            isOneToOne: false
+            referencedRelation: "relationship_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_relationships_source_entity_id_fkey"
+            columns: ["source_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_relationships_target_entity_id_fkey"
+            columns: ["target_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_section_contributions: {
+        Row: {
+          author_user_id: string
+          body_json: Json
+          body_preview: string | null
+          body_text: string
+          campaign_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          id: string
+          section_id: string
+          updated_at: string
+          updated_by: string
+          version_number: number
+          visibility: string
+        }
+        Insert: {
+          author_user_id: string
+          body_json?: Json
+          body_preview?: string | null
+          body_text?: string
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          id?: string
+          section_id: string
+          updated_at?: string
+          updated_by: string
+          version_number?: number
+          visibility: string
+        }
+        Update: {
+          author_user_id?: string
+          body_json?: Json
+          body_preview?: string | null
+          body_text?: string
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id?: string
+          section_id?: string
+          updated_at?: string
+          updated_by?: string
+          version_number?: number
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_section_contributions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_section_contributions_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "entity_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entity_section_definitions: {
         Row: {
           created_at: string
@@ -2237,6 +2374,104 @@ export type Database = {
           },
         ]
       }
+      note_attachments: {
+        Row: {
+          created_at: string
+          created_by: string
+          entity_id: string | null
+          id: string
+          note_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          entity_id?: string | null
+          id?: string
+          note_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          entity_id?: string | null
+          id?: string
+          note_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_attachments_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_attachments_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          author_user_id: string
+          body_json: Json
+          body_preview: string | null
+          body_text: string
+          campaign_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          id: string
+          updated_at: string
+          updated_by: string
+          version_number: number
+          visibility: string
+        }
+        Insert: {
+          author_user_id: string
+          body_json?: Json
+          body_preview?: string | null
+          body_text?: string
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          id?: string
+          updated_at?: string
+          updated_by: string
+          version_number?: number
+          visibility: string
+        }
+        Update: {
+          author_user_id?: string
+          body_json?: Json
+          body_preview?: string | null
+          body_text?: string
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string
+          version_number?: number
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       npcs: {
         Row: {
           apparent_status_id: string
@@ -2845,6 +3080,78 @@ export type Database = {
           },
         ]
       }
+      rich_text_entity_mentions: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          mention_text: string
+          mentioned_entity_id: string
+          source_contribution_id: string | null
+          source_note_id: string | null
+          source_section_id: string | null
+          source_type: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          mention_text: string
+          mentioned_entity_id: string
+          source_contribution_id?: string | null
+          source_note_id?: string | null
+          source_section_id?: string | null
+          source_type: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          mention_text?: string
+          mentioned_entity_id?: string
+          source_contribution_id?: string | null
+          source_note_id?: string | null
+          source_section_id?: string | null
+          source_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rich_text_entity_mentions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rich_text_entity_mentions_mentioned_entity_id_fkey"
+            columns: ["mentioned_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rich_text_entity_mentions_source_contribution_id_fkey"
+            columns: ["source_contribution_id"]
+            isOneToOne: false
+            referencedRelation: "entity_section_contributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rich_text_entity_mentions_source_note_id_fkey"
+            columns: ["source_note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rich_text_entity_mentions_source_section_id_fkey"
+            columns: ["source_section_id"]
+            isOneToOne: false
+            referencedRelation: "entity_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_definitions: {
         Row: {
           id: string
@@ -2871,6 +3178,103 @@ export type Database = {
           sort_order?: number
         }
         Relationships: []
+      }
+      session_attending_characters: {
+        Row: {
+          campaign_id: string
+          character_entity_id: string
+          created_at: string
+          created_by: string
+          session_entity_id: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          campaign_id: string
+          character_entity_id: string
+          created_at?: string
+          created_by: string
+          session_entity_id: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          campaign_id?: string
+          character_entity_id?: string
+          created_at?: string
+          created_by?: string
+          session_entity_id?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_attending_characters_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_attending_characters_character_entity_id_fkey"
+            columns: ["character_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_attending_characters_session_entity_id_fkey"
+            columns: ["session_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_attending_users: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string
+          session_entity_id: string
+          updated_at: string
+          updated_by: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          session_entity_id: string
+          updated_at?: string
+          updated_by: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          session_entity_id?: string
+          updated_at?: string
+          updated_by?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_attending_users_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_attending_users_session_entity_id_fkey"
+            columns: ["session_entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sessions: {
         Row: {
@@ -3389,13 +3793,73 @@ export type Database = {
       }
     }
     Functions: {
+      assert_entity_relationship_visibility: {
+        Args: {
+          p_campaign_id: string
+          p_source_entity_id: string
+          p_target_entity_id: string
+          p_visibility: string
+        }
+        Returns: undefined
+      }
+      assert_manage_session_attendance: {
+        Args: { p_session_entity_id: string }
+        Returns: string
+      }
+      assert_rich_text_payload_matches: {
+        Args: {
+          p_body_json: Json
+          p_body_preview: string
+          p_body_text: string
+          p_mentions: Json
+        }
+        Returns: undefined
+      }
+      attach_note_target: {
+        Args: { p_entity_id?: string; p_note_id: string; p_target_type: string }
+        Returns: undefined
+      }
+      can_add_entity_contribution: {
+        Args: { p_entity_id: string }
+        Returns: boolean
+      }
+      can_add_entity_note: { Args: { p_entity_id: string }; Returns: boolean }
+      can_delete_campaign_entity: {
+        Args: { p_entity_id: string }
+        Returns: boolean
+      }
       can_edit_entity_core: { Args: { p_entity_id: string }; Returns: boolean }
+      can_edit_entity_section: {
+        Args: { p_section_id: string }
+        Returns: boolean
+      }
+      can_edit_entity_section_contribution: {
+        Args: { p_contribution_id: string }
+        Returns: boolean
+      }
+      can_edit_note: { Args: { p_note_id: string }; Returns: boolean }
+      can_manage_entity_relationships: {
+        Args: { p_campaign_id: string }
+        Returns: boolean
+      }
+      can_manage_entity_visibility: {
+        Args: { p_entity_id: string }
+        Returns: boolean
+      }
       can_mutate_campaign_config: {
         Args: { campaign_id: string }
         Returns: boolean
       }
       can_view_campaign_entity: {
         Args: { p_entity_id: string }
+        Returns: boolean
+      }
+      can_view_campaign_entity_for_role: {
+        Args: { p_entity_id: string; p_role_view?: string }
+        Returns: boolean
+      }
+      can_view_entity_section_contribution: {
+        Args: { p_contribution_id: string }
         Returns: boolean
       }
       can_view_entity_visibility: {
@@ -3407,7 +3871,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_view_entity_visibility_for_role: {
+        Args: {
+          p_campaign_id: string
+          p_created_by: string
+          p_entity_id?: string
+          p_role_view?: string
+          p_visibility: string
+        }
+        Returns: boolean
+      }
       can_view_gm_content: { Args: { campaign_id: string }; Returns: boolean }
+      can_view_note: { Args: { p_note_id: string }; Returns: boolean }
       create_campaign: {
         Args: {
           p_description?: string
@@ -3446,8 +3921,73 @@ export type Database = {
           updated_at: string
         }[]
       }
+      create_entity_relationship: {
+        Args: {
+          p_relationship_type_id: string
+          p_source_entity_id: string
+          p_target_entity_id: string
+          p_visibility: string
+        }
+        Returns: {
+          campaign_id: string
+          relationship_id: string
+          source_entity_id: string
+          target_entity_id: string
+        }[]
+      }
+      create_entity_section_contribution: {
+        Args: {
+          p_body_json: Json
+          p_body_preview: string
+          p_body_text: string
+          p_mentions?: Json
+          p_section_id: string
+          p_visibility: string
+        }
+        Returns: {
+          campaign_id: string
+          contribution_id: string
+          section_id: string
+          version_number: number
+          visibility: string
+        }[]
+      }
+      create_note: {
+        Args: {
+          p_attach_to_campaign?: boolean
+          p_body_json: Json
+          p_body_preview: string
+          p_body_text: string
+          p_campaign_id: string
+          p_entity_ids?: string[]
+          p_mentions?: Json
+          p_visibility: string
+        }
+        Returns: {
+          campaign_id: string
+          note_id: string
+          version_number: number
+          visibility: string
+        }[]
+      }
       current_user_email_normalized: { Args: never; Returns: string }
       current_user_id: { Args: never; Returns: string }
+      derive_rich_text_payload: {
+        Args: { p_body_json: Json }
+        Returns: {
+          body_preview: string
+          body_text: string
+          mentions: Json
+        }[]
+      }
+      derive_rich_text_text_from_node: {
+        Args: { p_node: Json }
+        Returns: string
+      }
+      detach_note_target: {
+        Args: { p_entity_id?: string; p_note_id: string; p_target_type: string }
+        Returns: undefined
+      }
       ensure_user_defaults: {
         Args: never
         Returns: {
@@ -3458,6 +3998,35 @@ export type Database = {
         }[]
       }
       entity_ref_label: { Args: { p_entity_id: string }; Returns: string }
+      entity_ref_label_for_role: {
+        Args: { p_entity_id: string; p_role_view?: string }
+        Returns: string
+      }
+      extract_rich_text_mentions_from_node: {
+        Args: { p_node: Json }
+        Returns: Json
+      }
+      get_campaign_activity: {
+        Args: {
+          p_campaign_id: string
+          p_limit?: number
+          p_related_entity_id?: string
+          p_role_view?: string
+        }
+        Returns: {
+          activity_type: string
+          actor_display_label: string
+          actor_user_id: string
+          campaign_id: string
+          label: string
+          occurred_at: string
+          subject_entity_id: string
+          subject_id: string
+          subject_label: string
+          subject_type: string
+          visibility: string
+        }[]
+      }
       get_campaign_entity_summaries: {
         Args: { p_campaign_id: string }
         Returns: {
@@ -3502,51 +4071,6 @@ export type Database = {
           updated_at: string
         }[]
       }
-      get_character_hooks: {
-        Args: { p_character_entity_id: string }
-        Returns: {
-          category_label: string | null
-          category_option_id: string | null
-          description_text: string
-          gm_note_text: string | null
-          id: string
-          promoted_storyline_entity_id: string | null
-          promoted_storyline_label: string | null
-          sort_order: number
-          status_key: string
-          status_label: string
-          updated_at: string
-          visibility: string
-        }[]
-      }
-      get_entity_quick_stats: {
-        Args: { p_entity_id: string }
-        Returns: {
-          compact_label: string
-          field_id: string
-          field_key: string
-          label: string
-          sort_order: number
-          value_id: string | null
-          value_number: number | null
-          value_text: string | null
-          visibility: string
-          value_type: string
-        }[]
-      }
-      get_encounter_statblocks: {
-        Args: { p_encounter_entity_id: string }
-        Returns: {
-          id: string
-          instances: Json
-          label: string
-          linked_npc_entity_id: string | null
-          linked_npc_label: string | null
-          quantity: number
-          sort_order: number
-          values: Json
-        }[]
-      }
       get_campaign_membership_summary: {
         Args: { p_campaign_id: string }
         Returns: {
@@ -3554,6 +4078,24 @@ export type Database = {
           membership_status: string
           role_keys: string[]
           user_id: string
+        }[]
+      }
+      get_campaign_notes: {
+        Args: { p_campaign_id: string }
+        Returns: {
+          attachments: Json
+          author_display_label: string
+          author_user_id: string
+          body_json: Json
+          body_preview: string
+          body_text: string
+          campaign_id: string
+          can_edit: boolean
+          created_at: string
+          id: string
+          updated_at: string
+          version_number: number
+          visibility: string
         }[]
       }
       get_campaign_options: {
@@ -3600,11 +4142,70 @@ export type Database = {
           sort_order: number
         }[]
       }
+      get_character_hooks: {
+        Args: { p_character_entity_id: string; p_role_view?: string }
+        Returns: {
+          category_label: string
+          category_option_id: string
+          description_text: string
+          gm_note_text: string
+          id: string
+          promoted_storyline_entity_id: string
+          promoted_storyline_label: string
+          sort_order: number
+          status_key: string
+          status_label: string
+          updated_at: string
+          visibility: string
+        }[]
+      }
+      get_current_session: {
+        Args: { p_campaign_id: string; p_role_view?: string }
+        Returns: {
+          list_caption: string
+          selection_reason: string
+          session_date: string
+          session_entity_id: string
+          status_key: string
+          status_label: string
+        }[]
+      }
+      get_encounter_statblocks: {
+        Args: { p_encounter_entity_id: string; p_role_view?: string }
+        Returns: {
+          id: string
+          instances: Json
+          label: string
+          linked_npc_entity_id: string
+          linked_npc_label: string
+          quantity: number
+          sort_order: number
+          values: Json
+        }[]
+      }
+      get_entity_backlinks: {
+        Args: { p_entity_id: string; p_role_view?: string }
+        Returns: {
+          author_display_label: string
+          source_entity_id: string
+          source_id: string
+          source_label: string
+          source_preview: string
+          source_type: string
+          updated_at: string
+          visibility: string
+        }[]
+      }
       get_entity_detail: {
-        Args: { p_entity_id: string }
+        Args: { p_entity_id: string; p_role_view?: string }
         Returns: {
           archived_at: string
           campaign_id: string
+          can_add_contribution: boolean
+          can_add_note: boolean
+          can_delete: boolean
+          can_edit_core: boolean
+          can_manage_visibility: boolean
           controlling_user_display_label: string
           controlling_user_id: string
           default_visibility: string
@@ -3637,17 +4238,100 @@ export type Database = {
           updated_at: string
         }[]
       }
-      promote_character_hook_to_storyline: {
-        Args: { p_hook_id: string; p_visibility?: string }
+      get_entity_notes: {
+        Args: { p_entity_id: string; p_role_view?: string }
+        Returns: {
+          attachments: Json
+          author_display_label: string
+          author_user_id: string
+          body_json: Json
+          body_preview: string
+          body_text: string
+          campaign_id: string
+          can_edit: boolean
+          created_at: string
+          id: string
+          updated_at: string
+          version_number: number
+          visibility: string
+        }[]
+      }
+      get_entity_quick_stats: {
+        Args: { p_entity_id: string; p_role_view?: string }
+        Returns: {
+          compact_label: string
+          field_id: string
+          field_key: string
+          label: string
+          sort_order: number
+          value_id: string
+          value_number: number
+          value_text: string
+          value_type: string
+          visibility: string
+        }[]
+      }
+      get_entity_related_records: {
+        Args: { p_entity_id: string; p_role_view?: string }
         Returns: {
           campaign_id: string
-          default_visibility: string
-          entity_id: string
-          entity_type_key: string
-          list_caption: string
-          status_key: string
-          status_label: string
+          can_edit: boolean
+          label: string
+          mention_count: number
+          related_entity_id: string
+          related_entity_label: string
+          related_entity_type_key: string
+          related_resolution_state: string
+          relation_source: string
+          relationship_type_key: string
+          source_contribution_id: string
+          source_entity_id: string
+          source_note_id: string
+          source_section_id: string
+          source_summary: string
+          source_type: string
+          target_entity_id: string
           updated_at: string
+          visibility: string
+        }[]
+      }
+      get_entity_relationships: {
+        Args: { p_entity_id: string; p_role_view?: string }
+        Returns: {
+          campaign_id: string
+          can_edit: boolean
+          inverse_label: string
+          label: string
+          related_entity_id: string
+          related_entity_label: string
+          related_entity_type_key: string
+          related_resolution_state: string
+          relation_direction: string
+          relationship_id: string
+          relationship_type_id: string
+          relationship_type_key: string
+          source_entity_id: string
+          target_entity_id: string
+          updated_at: string
+          visibility: string
+        }[]
+      }
+      get_entity_sections: {
+        Args: { p_entity_id: string; p_role_view?: string }
+        Returns: {
+          body_json: Json
+          body_preview: string
+          body_text: string
+          can_edit: boolean
+          content_mode: string
+          edit_policy: string
+          entity_id: string
+          id: string
+          label: string
+          section_key: string
+          updated_at: string
+          version_number: number
+          visibility: string
         }[]
       }
       get_entity_status_options: {
@@ -3697,6 +4381,17 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_party_members: {
+        Args: { p_party_entity_id: string; p_role_view?: string }
+        Returns: {
+          character_entity_id: string
+          character_label: string
+          character_visibility: string
+          is_active: boolean
+          role_label: string
+          sort_order: number
+        }[]
+      }
       get_safe_member_profiles: {
         Args: { p_campaign_id: string }
         Returns: {
@@ -3710,6 +4405,57 @@ export type Database = {
           display_name: string
           display_name_override: string
           user_id: string
+        }[]
+      }
+      get_section_contributions: {
+        Args: { p_role_view?: string; p_section_id: string }
+        Returns: {
+          author_display_label: string
+          author_user_id: string
+          body_json: Json
+          body_preview: string
+          body_text: string
+          can_edit: boolean
+          created_at: string
+          id: string
+          section_id: string
+          updated_at: string
+          version_number: number
+          visibility: string
+        }[]
+      }
+      get_session_attendance: {
+        Args: { p_role_view?: string; p_session_entity_id: string }
+        Returns: {
+          attending_characters: Json
+          attending_users: Json
+          can_manage: boolean
+          session_entity_id: string
+        }[]
+      }
+      get_timeline_events: {
+        Args: {
+          p_campaign_id: string
+          p_event_type_key?: string
+          p_related_entity_id?: string
+          p_related_session_entity_id?: string
+          p_role_view?: string
+          p_visibility?: string
+        }
+        Returns: {
+          campaign_id: string
+          date_expression: string
+          default_visibility: string
+          entity_id: string
+          event_type_key: string
+          event_type_label: string
+          list_caption: string
+          primary_location_entity_id: string
+          primary_location_label: string
+          related_session_entity_id: string
+          related_session_label: string
+          sort_key: string
+          updated_at: string
         }[]
       }
       has_campaign_role: {
@@ -3734,7 +4480,43 @@ export type Database = {
       is_campaign_gm: { Args: { campaign_id: string }; Returns: boolean }
       is_campaign_member: { Args: { campaign_id: string }; Returns: boolean }
       is_campaign_owner: { Args: { campaign_id: string }; Returns: boolean }
+      is_player_preview_role: {
+        Args: { p_role_view?: string }
+        Returns: boolean
+      }
       normalize_email: { Args: { email: string }; Returns: string }
+      note_has_visible_attachment: {
+        Args: { p_note_id: string }
+        Returns: boolean
+      }
+      promote_character_hook_to_storyline: {
+        Args: { p_hook_id: string; p_visibility?: string }
+        Returns: {
+          campaign_id: string
+          default_visibility: string
+          entity_id: string
+          entity_type_key: string
+          list_caption: string
+          status_key: string
+          status_label: string
+          updated_at: string
+        }[]
+      }
+      rebuild_rich_text_mentions_for_source: {
+        Args: { p_mentions?: Json; p_source_id: string; p_source_type: string }
+        Returns: undefined
+      }
+      replace_rich_text_mentions: {
+        Args: {
+          p_campaign_id: string
+          p_mentions?: Json
+          p_source_contribution_id?: string
+          p_source_note_id?: string
+          p_source_section_id?: string
+          p_source_type: string
+        }
+        Returns: undefined
+      }
       require_campaign_entity_ref: {
         Args: {
           p_campaign_id: string
@@ -3781,6 +4563,197 @@ export type Database = {
         }
         Returns: string
       }
+      resolve_entity_references: {
+        Args: { p_entity_ids: string[] }
+        Returns: {
+          can_request_access: boolean
+          can_restore: boolean
+          display_label: string
+          entity_type_key: string
+          requested_entity_id: string
+          resolution_state: string
+        }[]
+      }
+      resolve_note_visibility_entity: {
+        Args: { p_note_id: string }
+        Returns: string
+      }
+      resolve_note_visibility_entity_from_inputs: {
+        Args: {
+          p_attach_to_campaign: boolean
+          p_entity_ids: string[]
+          p_visibility: string
+        }
+        Returns: string
+      }
+      save_entity_section_body: {
+        Args: {
+          p_body_json: Json
+          p_body_preview: string
+          p_body_text: string
+          p_expected_version: number
+          p_mentions: Json
+          p_section_id: string
+        }
+        Returns: {
+          entity_id: string
+          section_id: string
+          version_number: number
+        }[]
+      }
+      soft_delete_entity_relationship: {
+        Args: { p_relationship_id: string }
+        Returns: {
+          campaign_id: string
+          relationship_id: string
+          source_entity_id: string
+          target_entity_id: string
+        }[]
+      }
+      soft_delete_entity_section_contribution: {
+        Args: { p_contribution_id: string }
+        Returns: undefined
+      }
+      soft_delete_note: { Args: { p_note_id: string }; Returns: undefined }
+      update_encounter: {
+        Args: {
+          p_clear_difficulty_option?: boolean
+          p_clear_related_session?: boolean
+          p_clear_related_storyline?: boolean
+          p_clear_sort_order?: boolean
+          p_difficulty_option_id?: string
+          p_encounter_entity_id: string
+          p_encounter_type_option_id?: string
+          p_related_session_entity_id?: string
+          p_related_storyline_entity_id?: string
+          p_sort_order?: number
+          p_status_id?: string
+          p_title?: string
+        }
+        Returns: {
+          campaign_id: string
+          entity_id: string
+        }[]
+      }
+      update_entity_relationship: {
+        Args: {
+          p_relationship_id: string
+          p_relationship_type_id: string
+          p_visibility: string
+        }
+        Returns: {
+          campaign_id: string
+          relationship_id: string
+          source_entity_id: string
+          target_entity_id: string
+        }[]
+      }
+      update_entity_section_contribution: {
+        Args: {
+          p_body_json: Json
+          p_body_preview: string
+          p_body_text: string
+          p_contribution_id: string
+          p_expected_version: number
+          p_mentions: Json
+          p_visibility: string
+        }
+        Returns: {
+          campaign_id: string
+          contribution_id: string
+          section_id: string
+          version_number: number
+          visibility: string
+        }[]
+      }
+      update_note_body: {
+        Args: {
+          p_body_json: Json
+          p_body_preview: string
+          p_body_text: string
+          p_expected_version: number
+          p_mentions: Json
+          p_note_id: string
+          p_visibility: string
+        }
+        Returns: {
+          campaign_id: string
+          note_id: string
+          version_number: number
+          visibility: string
+        }[]
+      }
+      update_session: {
+        Args: {
+          p_clear_end_time?: boolean
+          p_clear_start_time?: boolean
+          p_end_time?: string
+          p_gm_summary?: string
+          p_next_session_teaser?: string
+          p_public_summary?: string
+          p_session_date?: string
+          p_session_entity_id: string
+          p_session_number_label?: string
+          p_start_time?: string
+          p_status_id?: string
+          p_title?: string
+        }
+        Returns: {
+          campaign_id: string
+          entity_id: string
+        }[]
+      }
+      update_session_attendance: {
+        Args: {
+          p_character_entity_ids?: string[]
+          p_session_entity_id: string
+          p_user_ids?: string[]
+        }
+        Returns: {
+          campaign_id: string
+          character_count: number
+          session_entity_id: string
+          user_count: number
+        }[]
+      }
+      update_storyline: {
+        Args: {
+          p_clear_completed_at?: boolean
+          p_clear_parent_storyline?: boolean
+          p_clear_primary_location?: boolean
+          p_clear_priority_option?: boolean
+          p_clear_sort_order?: boolean
+          p_clear_storyline_category_option?: boolean
+          p_completed_at?: string
+          p_gm_summary?: string
+          p_is_major?: boolean
+          p_parent_storyline_entity_id?: string
+          p_primary_location_entity_id?: string
+          p_priority_option_id?: string
+          p_public_summary?: string
+          p_reward_text?: string
+          p_sort_order?: number
+          p_status_id?: string
+          p_storyline_category_option_id?: string
+          p_storyline_entity_id: string
+          p_storyline_type?: string
+          p_title?: string
+        }
+        Returns: {
+          campaign_id: string
+          entity_id: string
+        }[]
+      }
+      validate_mentions_payload: {
+        Args: { p_campaign_id: string; p_mentions: Json }
+        Returns: undefined
+      }
+      validate_rich_text_document: {
+        Args: { p_body_json: Json }
+        Returns: boolean
+      }
+      validate_rich_text_mark: { Args: { p_mark: Json }; Returns: boolean }
+      validate_rich_text_node: { Args: { p_node: Json }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
@@ -3913,3 +4886,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

@@ -6,6 +6,12 @@ export type EntityDirectoryFilters = {
   search?: string;
   includeArchived?: boolean;
   includeDeleted?: boolean;
+  storylineType?: string;
+  storylineCategoryLabel?: string;
+  storylinePriorityLabel?: string;
+  storylineMajorMode?: 'all' | 'major' | 'minor';
+  encounterTypeLabel?: string;
+  relatedSessionEntityId?: string;
 };
 
 export function filterEntitySummaries(summaries: EntitySummary[], filters: EntityDirectoryFilters) {
@@ -25,6 +31,46 @@ export function filterEntitySummaries(summaries: EntitySummary[], filters: Entit
     }
 
     if (filters.statusKey && summary.status_key !== filters.statusKey) {
+      return false;
+    }
+
+    if (filters.storylineType && summary.storyline_type !== filters.storylineType) {
+      return false;
+    }
+
+    if (
+      filters.storylineCategoryLabel &&
+      summary.storyline_category_label !== filters.storylineCategoryLabel
+    ) {
+      return false;
+    }
+
+    if (
+      filters.storylinePriorityLabel &&
+      summary.storyline_priority_label !== filters.storylinePriorityLabel
+    ) {
+      return false;
+    }
+
+    if (filters.storylineMajorMode === 'major' && summary.is_major !== true) {
+      return false;
+    }
+
+    if (filters.storylineMajorMode === 'minor' && summary.is_major === true) {
+      return false;
+    }
+
+    if (
+      filters.encounterTypeLabel &&
+      summary.encounter_type_label !== filters.encounterTypeLabel
+    ) {
+      return false;
+    }
+
+    if (
+      filters.relatedSessionEntityId &&
+      summary.related_session_entity_id !== filters.relatedSessionEntityId
+    ) {
       return false;
     }
 

@@ -6,13 +6,19 @@ import type { EncounterStatblock } from './types';
 
 export function useEncounterStatblocksQuery(
   encounterEntityId: MaybeRefOrGetter<string | null>,
-  options?: { enabled?: MaybeRefOrGetter<boolean> },
+  options?: {
+    enabled?: MaybeRefOrGetter<boolean>;
+    previewAsPlayer?: MaybeRefOrGetter<boolean>;
+  },
 ) {
   const client = useYifeSupabaseClient();
 
   return useQuery({
     queryKey: computed(() =>
-      entityQueryKeys.encounterStatblocks(toValue(encounterEntityId) ?? 'none'),
+      entityQueryKeys.encounterStatblocks(
+        toValue(encounterEntityId) ?? 'none',
+        options?.previewAsPlayer ? Boolean(toValue(options.previewAsPlayer)) : false,
+      ),
     ),
     enabled: computed(
       () =>
@@ -28,6 +34,8 @@ export function useEncounterStatblocksQuery(
 
       const { data, error } = await client.rpc('get_encounter_statblocks', {
         p_encounter_entity_id: id,
+        p_role_view:
+          options?.previewAsPlayer && toValue(options.previewAsPlayer) ? 'player' : undefined,
       });
 
       if (error) {

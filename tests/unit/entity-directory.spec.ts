@@ -114,4 +114,58 @@ describe('entity directory', () => {
       }),
     ).toEqual([storyline]);
   });
+
+  it('filters storyline and encounter milestone facets', () => {
+    const majorStoryline = summary({
+      entity_id: 'storyline-major',
+      entity_type_key: 'storyline',
+      is_major: true,
+      list_caption: 'War in the North',
+      storyline_category_label: 'Military',
+      storyline_priority_label: 'High',
+      storyline_type: 'thread',
+    });
+    const minorStoryline = summary({
+      entity_id: 'storyline-minor',
+      entity_type_key: 'storyline',
+      is_major: false,
+      list_caption: 'Find a Cartographer',
+      storyline_category_label: 'Investigation',
+      storyline_priority_label: 'Low',
+      storyline_type: 'quest',
+    });
+    const encounter = summary({
+      entity_id: 'encounter-1',
+      entity_type_key: 'encounter',
+      encounter_type_label: 'Combat',
+      related_session_entity_id: 'session-2',
+      related_session_label: 'Session 2',
+      list_caption: 'Bridge Ambush',
+    });
+
+    expect(
+      filterEntitySummaries([majorStoryline, minorStoryline, encounter], {
+        entityTypeKey: 'storyline',
+        storylineType: 'thread',
+        storylineCategoryLabel: 'Military',
+        storylinePriorityLabel: 'High',
+        storylineMajorMode: 'major',
+      }).map((item) => item.entity_id),
+    ).toEqual(['storyline-major']);
+
+    expect(
+      filterEntitySummaries([majorStoryline, minorStoryline, encounter], {
+        entityTypeKey: 'storyline',
+        storylineMajorMode: 'minor',
+      }).map((item) => item.entity_id),
+    ).toEqual(['storyline-minor']);
+
+    expect(
+      filterEntitySummaries([majorStoryline, minorStoryline, encounter], {
+        entityTypeKey: 'encounter',
+        encounterTypeLabel: 'Combat',
+        relatedSessionEntityId: 'session-2',
+      }).map((item) => item.entity_id),
+    ).toEqual(['encounter-1']);
+  });
 });

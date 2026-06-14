@@ -1,4 +1,9 @@
-create or replace function public.get_entity_quick_stats(p_entity_id uuid)
+drop function if exists public.get_entity_quick_stats(uuid);
+
+create function public.get_entity_quick_stats(
+  p_entity_id uuid,
+  p_role_view text default null
+)
 returns table (
   field_id uuid,
   field_key text,
@@ -22,7 +27,7 @@ as $$
     join public.entity_types et on et.id = ce.entity_type_id
     where ce.id = p_entity_id
       and ce.deleted_at is null
-      and public.can_view_campaign_entity(ce.id)
+      and public.can_view_campaign_entity_for_role(ce.id, p_role_view)
       and et.key in ('character', 'npc')
   ),
   active_fields as (
@@ -101,16 +106,22 @@ as $$
     on eqsv.entity_id = ec.entity_id
    and eqsv.field_id = sf.field_id
    and eqsv.campaign_id = ec.campaign_id
-  where public.can_view_entity_visibility(
+  where public.can_view_entity_visibility_for_role(
     ec.campaign_id,
     coalesce(eqsv.visibility, sf.default_visibility),
     eqsv.created_by,
-    ec.entity_id
+    ec.entity_id,
+    p_role_view
   )
   order by sf.sort_order, sf.label;
 $$;
 
-create or replace function public.get_character_hooks(p_character_entity_id uuid)
+drop function if exists public.get_character_hooks(uuid);
+
+create function public.get_character_hooks(
+  p_character_entity_id uuid,
+  p_role_view text default null
+)
 returns table (
   id uuid,
   description_text text,
@@ -138,9 +149,9 @@ as $$
     ch.category_option_id,
     co.label,
     ch.visibility,
-    case when public.can_view_gm_content(ch.campaign_id) then ch.gm_note_text else null end,
-    case when public.can_view_campaign_entity(ch.promoted_storyline_entity_id) then ch.promoted_storyline_entity_id else null end,
-    public.entity_ref_label(ch.promoted_storyline_entity_id),
+    case when not public.is_player_preview_role(p_role_view) and public.can_view_gm_content(ch.campaign_id) then ch.gm_note_text else null end,
+    case when public.can_view_campaign_entity_for_role(ch.promoted_storyline_entity_id, p_role_view) then ch.promoted_storyline_entity_id else null end,
+    public.entity_ref_label_for_role(ch.promoted_storyline_entity_id, p_role_view),
     ch.sort_order,
     ch.updated_at
   from public.character_hooks ch
@@ -155,18 +166,24 @@ as $$
       where ce.id = ch.character_entity_id
         and et.key = 'character'
         and ce.campaign_id = ch.campaign_id
-        and public.can_view_campaign_entity(ce.id)
+        and public.can_view_campaign_entity_for_role(ce.id, p_role_view)
     )
-    and public.can_view_entity_visibility(
+    and public.can_view_entity_visibility_for_role(
       ch.campaign_id,
       ch.visibility,
       ch.created_by,
-      ch.character_entity_id
+      ch.character_entity_id,
+      p_role_view
     )
   order by ch.sort_order, ch.created_at;
 $$;
 
-create or replace function public.get_encounter_statblocks(p_encounter_entity_id uuid)
+drop function if exists public.get_encounter_statblocks(uuid);
+
+create function public.get_encounter_statblocks(
+  p_encounter_entity_id uuid,
+  p_role_view text default null
+)
 returns table (
   id uuid,
   label text,
@@ -185,8 +202,8 @@ as $$
   select
     es.id,
     es.label,
-    case when public.can_view_campaign_entity(es.linked_npc_entity_id) then es.linked_npc_entity_id else null end,
-    public.entity_ref_label(es.linked_npc_entity_id),
+    case when public.can_view_campaign_entity_for_role(es.linked_npc_entity_id, p_role_view) then es.linked_npc_entity_id else null end,
+    public.entity_ref_label_for_role(es.linked_npc_entity_id, p_role_view),
     es.quantity,
     es.sort_order,
     coalesce((
@@ -283,16 +300,17 @@ as $$
       where ce.id = es.encounter_entity_id
         and et.key = 'encounter'
         and ce.campaign_id = es.campaign_id
-        and public.can_view_campaign_entity(ce.id)
+        and public.can_view_campaign_entity_for_role(ce.id, p_role_view)
+        and not public.is_player_preview_role(p_role_view)
         and public.can_view_gm_content(ce.campaign_id)
     )
   order by es.sort_order, es.label;
 $$;
 
-revoke all on function public.get_entity_quick_stats(uuid) from anon, public;
-revoke all on function public.get_character_hooks(uuid) from anon, public;
-revoke all on function public.get_encounter_statblocks(uuid) from anon, public;
+revoke all on function public.get_entity_quick_stats(uuid, text) from anon, public;
+revoke all on function public.get_character_hooks(uuid, text) from anon, public;
+revoke all on function public.get_encounter_statblocks(uuid, text) from anon, public;
 
-grant execute on function public.get_entity_quick_stats(uuid) to authenticated, service_role;
-grant execute on function public.get_character_hooks(uuid) to authenticated, service_role;
-grant execute on function public.get_encounter_statblocks(uuid) to authenticated, service_role;
+grant execute on function public.get_entity_quick_stats(uuid, text) to authenticated, service_role;
+grant execute on function public.get_character_hooks(uuid, text) to authenticated, service_role;
+grant execute on function public.get_encounter_statblocks(uuid, text) to authenticated, service_role;

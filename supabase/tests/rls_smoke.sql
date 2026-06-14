@@ -2012,11 +2012,44 @@ select pg_temp.assert_true(
 )
 from public.get_entity_detail((select entity_id from created_m04_entities where entity_type_key = 'npc'));
 select pg_temp.assert_true(
+  controlling_user_display_label = 'Player',
+  'character controllers can read their own controller label in safe summaries'
+)
+from public.get_campaign_entity_summaries((select campaign_id from created_campaign))
+where entity_id = (select entity_id from created_m04_entities where entity_type_key = 'character');
+select pg_temp.assert_true(
+  controlling_user_display_label = 'Player'
+  and controlling_user_id = '33333333-3333-3333-3333-333333333333',
+  'character controllers can read their own controller identity in safe detail payloads'
+)
+from public.get_entity_detail((select entity_id from created_m04_entities where entity_type_key = 'character'));
+select pg_temp.assert_true(
+  not can_manage_visibility
+  and not can_delete
+  and can_add_note
+  and not can_add_contribution,
+  'player detail capability flags stay constrained to safe actions'
+)
+from public.get_entity_detail((select entity_id from created_m04_entities where entity_type_key = 'npc'));
+select pg_temp.assert_true(
   parent_entity_id is null and parent_entity_label is null,
   'player summaries hide inaccessible structural reference ids and labels'
 )
 from public.get_campaign_entity_summaries((select campaign_id from created_campaign))
 where entity_id = (select entity_id from npc_with_hidden_reference);
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.resolve_entity_references(array[(select entity_id from created_m04_entities where entity_type_key = 'encounter')])
+    where requested_entity_id = (select entity_id from created_m04_entities where entity_type_key = 'encounter')
+      and resolution_state = 'inaccessible'
+      and display_label = 'Unavailable record'
+      and entity_type_key is null
+      and not can_restore
+      and not can_request_access
+  ),
+  'player reference resolution collapses hidden records to a coarse inaccessible placeholder'
+);
 select pg_temp.assert_true(not exists (
   select 1
   from public.entity_sections
@@ -2038,6 +2071,44 @@ select pg_temp.assert_true(
   (select typed_data ->> 'gm_summary'
    from public.get_entity_detail((select entity_id from created_m04_entities where entity_type_key = 'npc'))) is not null,
   'GM-safe detail payload includes GM-only typed fields'
+);
+select pg_temp.assert_true(
+  can_edit_core
+  and can_manage_visibility
+  and can_delete
+  and can_add_note
+  and not can_add_contribution,
+  'GM detail capability flags expose management actions'
+)
+from public.get_entity_detail((select entity_id from created_m04_entities where entity_type_key = 'npc'));
+select pg_temp.assert_true(
+  (select typed_data ->> 'gm_summary'
+   from public.get_entity_detail((select entity_id from created_m04_entities where entity_type_key = 'npc'), 'player')) is null,
+  'GM player preview detail uses player-safe projection for typed fields'
+);
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_entity_sections((select entity_id from created_m04_entities where entity_type_key = 'npc'), 'player')
+    where section_key = 'details'
+  )
+  and not exists (
+    select 1
+    from public.get_entity_sections((select entity_id from created_m04_entities where entity_type_key = 'npc'), 'player')
+    where section_key = 'gm_details'
+  ),
+  'GM player preview sections use player-safe projection'
+);
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.resolve_entity_references(array[(select entity_id from created_m04_entities where entity_type_key = 'encounter')])
+    where requested_entity_id = (select entity_id from created_m04_entities where entity_type_key = 'encounter')
+      and resolution_state = 'visible'
+      and display_label is not null
+      and entity_type_key = 'encounter'
+  ),
+  'GM reference resolution returns visible record metadata'
 );
 
 select pg_temp.assert_true(
@@ -2138,4 +2209,660 @@ select pg_temp.assert_true(
 );
 reset role;
 
-select 'M04 + 04.5 RLS smoke tests passed' as result;
+update public.entity_sections
+set content_mode = 'contribution_feed',
+    edit_policy = 'append_contributions'
+where entity_id = (select entity_id from created_m04_entities where entity_type_key = 'npc')
+  and section_key = 'details';
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+
+select *
+into temporary table created_shared_note
+from public.create_note(
+  (select campaign_id from created_campaign),
+  'shared',
+  jsonb_build_object(
+    'type', 'doc',
+    'content', jsonb_build_array(
+      jsonb_build_object(
+        'type', 'paragraph',
+        'content', jsonb_build_array(
+          jsonb_build_object('type', 'text', 'text', 'Shared note for '),
+          jsonb_build_object(
+            'type', 'mention',
+            'attrs', jsonb_build_object(
+              'entityId', (select entity_id from created_m04_entities where entity_type_key = 'character'),
+              'label', 'Ari Voss'
+            )
+          )
+        )
+      )
+    )
+  ),
+  'Shared note for @Ari Voss',
+  'Shared note for @Ari Voss',
+  jsonb_build_array(
+    jsonb_build_object(
+      'entity_id', (select entity_id from created_m04_entities where entity_type_key = 'character'),
+      'label', 'Ari Voss'
+    )
+  ),
+  false,
+  array[(select entity_id from created_m04_entities where entity_type_key = 'npc')]
+);
+
+select pg_temp.assert_true(count(*) = 1, 'create_note persists a shared note')
+from created_shared_note;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_entity_backlinks((select entity_id from created_m04_entities where entity_type_key = 'character'))
+    where source_type = 'note'
+      and source_id = (select note_id from created_shared_note)
+  ),
+  'create_note rebuilds mention rows'
+);
+
+select public.attach_note_target(
+  (select note_id from created_shared_note),
+  'entity',
+  (select entity_id from created_m04_entities where entity_type_key = 'encounter')
+);
+
+select pg_temp.expect_error(
+  $$select * from public.update_note_body(
+      (select note_id from created_shared_note),
+      'shared',
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"stale"}]}]}'::jsonb,
+      'stale',
+      'stale',
+      '[]'::jsonb,
+      0
+    )$$,
+  'update_note_body rejects stale version numbers'
+);
+
+select pg_temp.expect_error(
+  $$select * from public.create_note(
+      (select campaign_id from created_campaign),
+      'shared',
+      '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Real body"}]}]}'::jsonb,
+      'forged text',
+      'forged preview',
+      '[]'::jsonb,
+      false,
+      array[(select entity_id from created_m04_entities where entity_type_key = 'npc')]
+    )$$,
+  'create_note rejects forged derived payload fields'
+);
+
+select *
+into temporary table saved_npc_section
+from public.save_entity_section_body(
+  (
+    select id
+    from public.entity_sections
+    where entity_id = (select entity_id from created_m04_entities where entity_type_key = 'npc')
+      and section_key = 'gm_details'
+  ),
+  jsonb_build_object(
+    'type', 'doc',
+    'content', jsonb_build_array(
+      jsonb_build_object(
+        'type', 'paragraph',
+        'content', jsonb_build_array(
+          jsonb_build_object('type', 'text', 'text', 'Secret linked to '),
+          jsonb_build_object(
+            'type', 'mention',
+            'attrs', jsonb_build_object(
+              'entityId', (select entity_id from created_m04_entities where entity_type_key = 'character'),
+              'label', 'Ari Voss'
+            )
+          )
+        )
+      )
+    )
+  ),
+  'Secret linked to @Ari Voss',
+  'Secret linked to @Ari Voss',
+  jsonb_build_array(
+    jsonb_build_object(
+      'entity_id', (select entity_id from created_m04_entities where entity_type_key = 'character'),
+      'label', 'Ari Voss'
+    )
+  ),
+  1
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_entity_backlinks((select entity_id from created_m04_entities where entity_type_key = 'character'))
+    where source_type = 'entity_section'
+      and source_id = (select section_id from saved_npc_section)
+  ),
+  'backlinks expose visible section mentions to GMs'
+);
+
+select *
+into temporary table created_private_note
+from public.create_note(
+  (select campaign_id from created_campaign),
+  'private',
+  '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Private note"}]}]}'::jsonb,
+  'Private note',
+  'Private note',
+  '[]'::jsonb,
+  false,
+  array[(select entity_id from created_m04_entities where entity_type_key = 'npc')]
+);
+
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_entity_notes((select entity_id from created_m04_entities where entity_type_key = 'npc'))
+    where id = (select note_id from created_shared_note)
+  ),
+  'players can read shared notes attached to visible entities'
+);
+select pg_temp.assert_true(
+  (
+    select jsonb_array_length(attachments)
+    from public.get_entity_notes((select entity_id from created_m04_entities where entity_type_key = 'npc'))
+    where id = (select note_id from created_shared_note)
+  ) = 1,
+  'player note reads omit hidden attached-record placeholders entirely'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.get_entity_notes((select entity_id from created_m04_entities where entity_type_key = 'npc'))
+    where id = (select note_id from created_private_note)
+  ),
+  'players cannot read another user private notes'
+);
+
+select *
+into temporary table created_character_owner_note
+from public.create_note(
+  (select campaign_id from created_campaign),
+  'character_owner_gm',
+  '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Controller note"}]}]}'::jsonb,
+  'Controller note',
+  'Controller note',
+  '[]'::jsonb,
+  false,
+  array[(select entity_id from created_m04_entities where entity_type_key = 'character')]
+);
+
+select pg_temp.assert_true(count(*) = 1, 'character controller can create character_owner_gm note')
+from created_character_owner_note;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_entity_notes((select entity_id from created_m04_entities where entity_type_key = 'character'))
+    where id = (select note_id from created_character_owner_note)
+  ),
+  'character controller can read character_owner_gm note'
+);
+
+select *
+into temporary table created_contribution
+from public.create_entity_section_contribution(
+  (
+    select id
+    from public.entity_sections
+    where entity_id = (select entity_id from created_m04_entities where entity_type_key = 'npc')
+      and section_key = 'details'
+  ),
+  'shared',
+  '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Player theory"}]}]}'::jsonb,
+  'Player theory',
+  'Player theory',
+  '[]'::jsonb
+);
+
+select pg_temp.assert_true(count(*) = 1, 'players can create contributions in contribution-feed sections')
+from created_contribution;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_section_contributions((
+      select id
+      from public.entity_sections
+      where entity_id = (select entity_id from created_m04_entities where entity_type_key = 'npc')
+        and section_key = 'details'
+    ))
+    where id = (select contribution_id from created_contribution)
+  ),
+  'section contribution safe read returns visible contributions'
+);
+
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.get_entity_notes((select entity_id from created_m04_entities where entity_type_key = 'npc'))
+    where id = (select note_id from created_private_note)
+  ),
+  'other GMs cannot read private notes they did not author'
+);
+
+reset role;
+
+update public.campaign_entities
+set parent_entity_id = (
+  select entity_id
+  from created_m04_entities
+  where entity_type_key = 'location'
+)
+where id = (
+  select entity_id
+  from created_m04_entities
+  where entity_type_key = 'npc'
+);
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+
+select *
+into temporary table created_shared_relationship
+from public.create_entity_relationship(
+  (select entity_id from created_m04_entities where entity_type_key = 'npc'),
+  (select entity_id from created_m04_entities where entity_type_key = 'party'),
+  (
+    select id
+    from public.relationship_types
+    where key = 'ally_of'
+      and campaign_id is null
+  ),
+  'shared'
+);
+
+select pg_temp.assert_true(count(*) = 1, 'GMs can create shared explicit relationships')
+from created_shared_relationship;
+
+select *
+into temporary table created_gm_only_relationship
+from public.create_entity_relationship(
+  (select entity_id from created_m04_entities where entity_type_key = 'npc'),
+  (select entity_id from created_m04_entities where entity_type_key = 'character'),
+  (
+    select id
+    from public.relationship_types
+    where key = 'threatens'
+      and campaign_id is null
+  ),
+  'gm_only'
+);
+
+select pg_temp.expect_error(
+  $$select * from public.create_entity_relationship(
+      (select entity_id from created_m04_entities where entity_type_key = 'npc'),
+      (select entity_id from created_m04_entities where entity_type_key = 'encounter'),
+      (select id from public.relationship_types where key = 'related_to' and campaign_id is null),
+      'shared'
+    )$$,
+  'shared relationships reject hidden or non-shared endpoints'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_entity_relationships((select entity_id from created_m04_entities where entity_type_key = 'npc'))
+    where relationship_id = (select relationship_id from created_shared_relationship)
+      and relationship_type_key = 'ally_of'
+      and related_entity_label = 'The Lantern Company'
+  ),
+  'relationship read surface returns explicit relationships to GMs'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_entity_related_records((select entity_id from created_m04_entities where entity_type_key = 'npc'))
+    where relation_source = 'explicit'
+      and relationship_type_key = 'ally_of'
+  ),
+  'related-records include explicit relationship rows'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_entity_related_records((select entity_id from created_m04_entities where entity_type_key = 'npc'))
+    where relation_source = 'structural'
+      and relationship_type_key = 'parent_of'
+  ),
+  'related-records include structural link rows'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_entity_related_records((select entity_id from created_m04_entities where entity_type_key = 'npc'))
+    where relation_source = 'mention'
+      and source_type = 'note'
+  ),
+  'related-records include mention-derived rows'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_timeline_events((select campaign_id from created_campaign), null, null, null, null)
+    where entity_id = (select entity_id from created_m04_entities where entity_type_key = 'timeline_event')
+  ),
+  'timeline read surface returns visible timeline events'
+);
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_entity_relationships((select entity_id from created_m04_entities where entity_type_key = 'npc'))
+    where relationship_id = (select relationship_id from created_shared_relationship)
+  ),
+  'players can read shared explicit relationships'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.get_entity_relationships((select entity_id from created_m04_entities where entity_type_key = 'npc'))
+    where relationship_id = (select relationship_id from created_gm_only_relationship)
+  ),
+  'players cannot read GM-only explicit relationships'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.get_entity_related_records((select entity_id from created_m04_entities where entity_type_key = 'npc'))
+    where relation_source = 'explicit'
+      and relationship_type_key = 'threatens'
+  ),
+  'related-records hide GM-only relationship existence from players'
+);
+reset role;
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.get_entity_relationships((select entity_id from created_m04_entities where entity_type_key = 'npc'), 'player')
+    where visibility = 'gm_only'
+  ),
+  'GM player preview relationships use player-safe projection'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.get_entity_related_records((select entity_id from created_m04_entities where entity_type_key = 'npc'), 'player')
+    where relation_source = 'explicit'
+      and visibility = 'gm_only'
+  ),
+  'GM player preview related-records hide GM-only explicit links'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_timeline_events((select campaign_id from created_campaign), null, null, null, null, 'player')
+    where entity_id = (select entity_id from created_m04_entities where entity_type_key = 'timeline_event')
+  )
+  and not exists (
+    select 1
+    from public.get_timeline_events((select campaign_id from created_campaign), null, null, null, 'gm_only', 'player')
+  ),
+  'GM player preview timeline uses player-safe projection'
+);
+
+select pg_temp.expect_error(
+  $$select * from public.create_entity_relationship(
+      (select entity_id from created_m04_entities where entity_type_key = 'npc'),
+      (select entity_id from created_m04_entities where entity_type_key = 'character'),
+      (select id from public.relationship_types where key = 'ally_of' and campaign_id is null),
+      'shared'
+    )$$,
+  'players cannot create explicit relationships'
+);
+
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+
+create temporary table m08_secret_storyline as
+select *
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'storyline',
+  jsonb_build_object(
+    'title', 'Secret Arc',
+    'status_id', (
+      select sd.id
+      from public.status_definitions sd
+      join public.entity_types et on et.id = sd.entity_type_id
+      where et.key = 'storyline'
+        and sd.key = 'open'
+        and sd.campaign_id is null
+      limit 1
+    ),
+    'storyline_type', 'quest',
+    'default_visibility', 'gm_only'
+  )
+);
+
+create temporary table m08_shared_future_session as
+select *
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'session',
+  jsonb_build_object(
+    'title', 'Visible Future Session',
+    'status_id', (
+      select sd.id
+      from public.status_definitions sd
+      join public.entity_types et on et.id = sd.entity_type_id
+      where et.key = 'session'
+        and sd.key = 'planned'
+        and sd.campaign_id is null
+      limit 1
+    ),
+    'session_date', '2026-06-20'
+  )
+);
+
+create temporary table m08_hidden_soon_session as
+select *
+from public.create_campaign_entity(
+  (select campaign_id from created_campaign),
+  'session',
+  jsonb_build_object(
+    'title', 'Hidden Soon Session',
+    'status_id', (
+      select sd.id
+      from public.status_definitions sd
+      join public.entity_types et on et.id = sd.entity_type_id
+      where et.key = 'session'
+        and sd.key = 'planned'
+        and sd.campaign_id is null
+      limit 1
+    ),
+    'session_date', '2026-06-14',
+    'default_visibility', 'gm_only'
+  )
+);
+
+create temporary table m08_secret_note as
+select *
+from public.create_note(
+  (select campaign_id from created_campaign),
+  'gm_only',
+  '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Secret arc prep"}]}]}'::jsonb,
+  'Secret arc prep',
+  'Secret arc prep',
+  '[]'::jsonb,
+  false,
+  array[(select entity_id from m08_secret_storyline)]
+);
+
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', false);
+
+create temporary table m08_private_note as
+select *
+from public.create_note(
+  (select campaign_id from created_campaign),
+  'private',
+  '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Player-only note"}]}]}'::jsonb,
+  'Player-only note',
+  'Player-only note',
+  '[]'::jsonb,
+  false,
+  array[(select entity_id from created_m04_entities where entity_type_key = 'character')]
+);
+
+select pg_temp.assert_true(
+  array_agg(section_key order by section_key) = array['session_notes']::text[],
+  'players only read shared session sections'
+)
+from public.get_entity_sections(
+  (select entity_id from created_m04_entities where entity_type_key = 'session'),
+  'player'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.get_campaign_entity_summaries((select campaign_id from created_campaign))
+    where entity_id in (
+      (select entity_id from created_m04_entities where entity_type_key = 'encounter'),
+      (select entity_id from m08_secret_storyline)
+    )
+  ),
+  'player summaries omit gm-only encounters and storylines'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_campaign_activity((select campaign_id from created_campaign), null, 50)
+    where subject_id = (select note_id from m08_private_note)
+      and activity_type = 'note_created'
+  ),
+  'private note activity is visible to the author'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.get_campaign_activity((select campaign_id from created_campaign), null, 50)
+    where label ilike '%Secret Arc%'
+  ),
+  'player activity labels do not leak hidden storyline labels'
+);
+
+select pg_temp.assert_true(
+  (select session_entity_id from public.get_current_session((select campaign_id from created_campaign), 'player'))
+    <> (select entity_id from m08_hidden_soon_session),
+  'player current session skips hidden earlier planned sessions'
+);
+
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.get_campaign_entity_summaries((select campaign_id from created_campaign))
+    where entity_id = (select entity_id from m08_secret_storyline)
+  ),
+  'GM summaries include gm-only storylines'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.get_campaign_activity((select campaign_id from created_campaign), null, 50)
+    where subject_id = (select note_id from m08_private_note)
+  ),
+  'private note activity stays author-only even for GMs'
+);
+
+select pg_temp.assert_true(
+  (select session_entity_id from public.get_current_session((select campaign_id from created_campaign)))
+    = (select entity_id from m08_hidden_soon_session),
+  'GM current session picks the nearest upcoming planned session'
+);
+
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+
+create temporary table m08_other_campaign as
+select *
+from public.create_campaign('Attendance Cross-Campaign', current_date, 'Second campaign');
+
+create temporary table m08_other_character as
+select *
+from public.create_campaign_entity(
+  (select campaign_id from m08_other_campaign),
+  'character',
+  jsonb_build_object(
+    'name', 'Off-Campaign Hero',
+    'status_id', (
+      select sd.id
+      from public.status_definitions sd
+      join public.entity_types et on et.id = sd.entity_type_id
+      where et.key = 'character'
+        and sd.key = 'active'
+        and sd.campaign_id is null
+      limit 1
+    ),
+    'controlling_user_id', '11111111-1111-1111-1111-111111111111'
+  )
+);
+
+select pg_temp.expect_error(
+  $$select * from public.update_session_attendance(
+      (select entity_id from created_m04_entities where entity_type_key = 'session'),
+      array['44444444-4444-4444-4444-444444444444'::uuid],
+      array[]::uuid[]
+    )$$,
+  'attendance rejects non-member users'
+);
+
+select pg_temp.expect_error(
+  $$select * from public.update_session_attendance(
+      (select entity_id from created_m04_entities where entity_type_key = 'session'),
+      array['33333333-3333-3333-3333-333333333333'::uuid],
+      array[(select entity_id from m08_other_character)]
+    )$$,
+  'attendance rejects cross-campaign characters'
+);
+
+select *
+into temporary table m08_attendance_result
+from public.update_session_attendance(
+  (select entity_id from created_m04_entities where entity_type_key = 'session'),
+  array['33333333-3333-3333-3333-333333333333'::uuid, '33333333-3333-3333-3333-333333333333'::uuid],
+  array[
+    (select entity_id from created_m04_entities where entity_type_key = 'character'),
+    (select entity_id from created_m04_entities where entity_type_key = 'character')
+  ]
+);
+
+select pg_temp.assert_true(user_count = 1 and character_count = 1, 'duplicate attendance rows are prevented')
+from m08_attendance_result;
+reset role;
+
+select 'M04 + 04.5 + 05 + 06 + 07 + 08 RLS smoke tests passed' as result;

@@ -5,7 +5,12 @@ import EntityCreateForm from '../../app/components/entities/EntityCreateForm.vue
 
 const mockStatuses = ref([{ id: 'status-open', key: 'open', label: 'Open' }]);
 const mockOptions = ref([{ id: 'priority-high', key: 'high', label: 'High' }]);
-const mockMembers = ref<{ user_id: string; display_name: string | null; display_name_override: string | null }[]>([]);
+const mockMembers = ref<
+  { user_id: string; display_name: string | null; display_name_override: string | null }[]
+>([]);
+const mockSummaries = ref<{ entity_id: string; entity_type_key: string; list_caption: string }[]>(
+  [],
+);
 const mockMutateAsync = vi.fn();
 
 vi.mock('../../app/composables/auth/useCurrentUser', () => ({
@@ -21,6 +26,12 @@ vi.mock('../../app/composables/campaigns/useCampaignMemberProfilesQuery', () => 
 vi.mock('../../app/composables/entities/useCampaignOptionsQuery', () => ({
   useCampaignOptionsQuery: () => ({
     data: mockOptions,
+  }),
+}));
+
+vi.mock('../../app/composables/entities/useCampaignEntitySummariesQuery', () => ({
+  useCampaignEntitySummariesQuery: () => ({
+    data: mockSummaries,
   }),
 }));
 
@@ -90,6 +101,7 @@ describe('EntityCreateForm', () => {
     mockMembers.value = [];
     mockStatuses.value = [{ id: 'status-open', key: 'open', label: 'Open' }];
     mockOptions.value = [{ id: 'priority-high', key: 'high', label: 'High' }];
+    mockSummaries.value = [];
   });
 
   it('uses the storyline create surface with quest/thread subtypes', async () => {

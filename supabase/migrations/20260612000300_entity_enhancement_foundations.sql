@@ -827,6 +827,79 @@ as $$
   )
 $$;
 
+create or replace function public.is_player_preview_role(p_role_view text default null)
+returns boolean
+language sql
+immutable
+as $$
+  select coalesce(p_role_view, '') = 'player'
+$$;
+
+create or replace function public.can_view_entity_visibility_for_role(
+  p_campaign_id uuid,
+  p_visibility text,
+  p_created_by uuid,
+  p_entity_id uuid default null,
+  p_role_view text default null
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select case
+    when public.is_player_preview_role(p_role_view) then
+      p_visibility = 'shared' and public.is_campaign_member(p_campaign_id)
+    else public.can_view_entity_visibility(p_campaign_id, p_visibility, p_created_by, p_entity_id)
+  end
+$$;
+
+create or replace function public.can_view_campaign_entity_for_role(
+  p_entity_id uuid,
+  p_role_view text default null
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1
+    from public.campaign_entities ce
+    where ce.id = p_entity_id
+      and ce.deleted_at is null
+      and public.is_campaign_member(ce.campaign_id)
+      and public.can_view_entity_visibility_for_role(
+        ce.campaign_id,
+        ce.default_visibility,
+        ce.created_by,
+        ce.id,
+        p_role_view
+      )
+  )
+$$;
+
+create or replace function public.entity_ref_label_for_role(
+  p_entity_id uuid,
+  p_role_view text default null
+)
+returns text
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select case
+    when public.can_view_campaign_entity_for_role(ce.id, p_role_view) then ce.list_caption
+    else null
+  end
+  from public.campaign_entities ce
+  where ce.id = p_entity_id
+    and ce.deleted_at is null
+$$;
+
 create or replace function public.can_edit_entity_core(p_entity_id uuid)
 returns boolean
 language sql
@@ -1572,6 +1645,10 @@ grant execute on function public.get_campaign_entity_summaries(uuid) to authenti
 grant execute on function public.get_safe_member_profiles(uuid) to authenticated, service_role;
 grant execute on function public.can_view_entity_visibility(uuid, text, uuid, uuid) to authenticated, service_role;
 grant execute on function public.can_view_campaign_entity(uuid) to authenticated, service_role;
+grant execute on function public.is_player_preview_role(text) to authenticated, service_role;
+grant execute on function public.can_view_entity_visibility_for_role(uuid, text, uuid, uuid, text) to authenticated, service_role;
+grant execute on function public.can_view_campaign_entity_for_role(uuid, text) to authenticated, service_role;
+grant execute on function public.entity_ref_label_for_role(uuid, text) to authenticated, service_role;
 grant execute on function public.can_edit_entity_core(uuid) to authenticated, service_role;
 grant execute on function public.require_campaign_option(uuid, text, uuid, boolean, boolean) to authenticated, service_role;
 grant execute on function public.require_campaign_palette_color(uuid, uuid, boolean, boolean) to authenticated, service_role;

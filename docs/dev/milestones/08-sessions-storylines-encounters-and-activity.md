@@ -69,6 +69,7 @@ Rules:
 - Owners/GMs can manage attendance.
 - Players can view visible attendance and may update their own attendance only if the product decision is explicitly enabled; default to owner/GM-managed attendance for M08.
 - Attendance UI must use safe member profile display data only; it must not expose auth email or user settings.
+- Attendance writes should go through RPCs rather than direct table writes because the workflow is role-sensitive and may update multiple rows together.
 
 ### 2. Build Session Detail Workflow
 
@@ -76,7 +77,8 @@ Enhance session detail shells with:
 
 - session date
 - status
-- visible summary section
+- `public_summary` / `gm_summary` short summary fields where useful
+- shared `session_notes` section
 - GM prep section
 - GM private notes section
 - attached notes
@@ -88,9 +90,12 @@ Enhance session detail shells with:
 
 Rules:
 
+- Use the existing M04.5 session section model and keys: `session_notes`, `gm_prep`, `gm_private_notes`.
 - Players see only shared/player-visible session sections and notes.
 - Owners/GMs see prep and private sections.
 - Session notes reuse the common notes component.
+- Reuse the existing M07 related-records/relationships model for session context. Do not add new typed session foreign keys for Storylines, NPCs, factions, or locations in M08.
+- `encounters.related_session_entity_id` and `timeline_events.related_session_entity_id` remain the primary typed session links; other session context comes from explicit relationships, structural links already in schema, mentions, and attached notes.
 - Session date display uses native `Intl`; no date library unless implementation proves painful.
 - Session status uses seeded definitions.
 
@@ -127,6 +132,8 @@ For M08:
 - Keep any temporary override in Pinia/local UI state.
 - Return placeholder state when no sessions exist.
 - Use this helper for session-oriented context panels and quick create defaults.
+- Resolver ordering is fixed for M08: choose the nearest upcoming `planned` session first, then fall back to the most recent `completed` session, and ignore `cancelled` sessions.
+- The resolver must respect role preview and visibility filtering before choosing a result.
 
 ### 5. Build Storyline Workflow
 
@@ -146,6 +153,9 @@ Rules:
 
 - Players see player-visible Storyline content.
 - Owners/GMs see private Storyline details.
+- M08 must not introduce a second Storyline permission model. Reuse the existing entity creation/edit policy rules from M04.5.
+- If the current workspace/UI remains GM-only for entity creation, keep player-created Storylines out of scope for M08 implementation. Do not widen create UI/permissions in this milestone just for Storylines.
+- If player-created Storylines are already enabled through the existing entity permission model, shared player-created Storylines remain `player_edit` and private player-created Storylines remain author-only / `owner_edit`.
 - Hiddenness is visibility, not a status.
 - Parent Storyline structural links appear in related records.
 - Major parent Storylines replace plot arc planning records.
@@ -194,7 +204,7 @@ Use current context to prefill safe defaults for:
 - encounters related to current session
 - timeline events related to current session
 - notes attached to selected entity and current session where appropriate
-- Storyline/session relationship prompts where useful
+- Storyline/session explicit relationship prompts where useful
 
 Rules:
 
@@ -216,6 +226,20 @@ Initial sources:
 - new/updated relationships
 - uploaded media later
 - membership/invitation changes later where visible
+
+For M08 scope, implement only:
+
+- created/updated campaign entities
+- new/updated notes
+- updated entity sections
+- new/updated contributions
+- new/updated relationships
+
+Defer as initial feed sources unless implementation is already trivial:
+
+- status-only activity rows separate from the entity update row
+- uploaded media
+- membership/invitation changes
 
 Minimum fields:
 
@@ -257,16 +281,19 @@ Rules:
 
 ### 11. Add Query And Mutation Composables
 
-Expected query composables:
+Reuse the existing generic entity read pattern where possible:
+
+- `useCampaignEntitySummariesQuery` remains the primary campaign-wide summary read.
+- `useEntityDetailQuery` remains the primary entity detail read.
+- Existing preview-as-player query behavior and query-key separation must be preserved for all new session/Storyline/encounter/activity reads.
+
+Add targeted query composables for the new missing behavior:
 
 - `useSessionsQuery`
-- `useSessionDetailQuery`
 - `useSessionAttendanceQuery`
 - `useCurrentSessionQuery`
 - `useStorylinesQuery`
-- `useStorylineDetailQuery`
 - `useEncountersQuery`
-- `useEncounterDetailQuery`
 - `useCampaignActivityQuery`
 
 Expected mutation composables:
@@ -275,14 +302,15 @@ Expected mutation composables:
 - `useUpdateSessionAttendanceMutation`
 - `useUpdateStorylineMutation`
 - `useUpdateEncounterMutation`
-- existing create entity mutation where creation is unchanged
+- existing generic create/update entity mutations where creation or core detail editing is unchanged
 
 Rules:
 
 - Components do not call Supabase directly.
 - TanStack Query owns server data.
-- Mutations invalidate summaries, detail, related records, activity, and current-session caches where relevant.
+- Mutations invalidate generic summaries/detail queries plus related records, activity, and current-session caches where relevant.
 - Pinia stores only current UI selection or temporary current-session override.
+- New M08 composables should exist only where the existing generic entity summary/detail reads are insufficient for filtering, attendance, current-session resolution, or activity.
 
 ### 12. Add Tests
 

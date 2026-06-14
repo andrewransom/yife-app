@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { ExternalLink, Link2, Sparkles } from 'lucide-vue-next';
+import { ExternalLink, Sparkles } from 'lucide-vue-next';
+import { useCurrentUser } from '~/composables/auth/useCurrentUser';
 import { useUiStore } from '~/stores/ui';
 import { getPaletteTokenStyle } from '~/utils/campaign-settings';
 import { useCharacterHooksQuery } from '~/composables/entities/useCharacterHooksQuery';
@@ -20,25 +21,21 @@ const props = withDefaults(
     detail?: EntityDetail | null;
     isLoading?: boolean;
     isUnavailable?: boolean;
+    activeRoleView?: 'gm' | 'player';
+    isPlayerPreview?: boolean;
+    showInlineContext?: boolean;
   }>(),
   {
     detail: null,
     isLoading: false,
     isUnavailable: false,
+    activeRoleView: 'gm',
+    isPlayerPreview: false,
+    showInlineContext: true,
   },
 );
 
 type Visibility = 'shared' | 'gm_only' | 'private' | 'character_owner_gm';
-type SectionSummary = {
-  id: string;
-  section_key: string;
-  label: string;
-  visibility: Visibility;
-  edit_policy: string;
-  content_mode: string;
-  body_preview?: string | null;
-  version_number?: number | null;
-};
 type EntityRef = { id: string; label: string };
 type PaletteColor = {
   id: string;
@@ -58,6 +55,10 @@ type DetailItem = {
 type DetailBlock = {
   label: string;
   value: string;
+  visibility?: Visibility;
+};
+type MetadataItem = {
+  label: string;
   visibility?: Visibility;
 };
 type EncounterStatblockValue = {
@@ -80,6 +81,7 @@ type EncounterStatblockInstance = {
 };
 
 const uiStore = useUiStore();
+const currentUser = useCurrentUser();
 const promotionSelections = ref<Record<string, 'shared' | 'private'>>({});
 const promotionError = ref('');
 const promoteHook = usePromoteCharacterHookMutation();
@@ -87,21 +89,22 @@ const promoteHook = usePromoteCharacterHookMutation();
 const entityId = computed(() => props.detail?.entity_id ?? null);
 const entityTypeKey = computed(() => props.detail?.entity_type_key ?? '');
 const typedData = computed<Record<string, unknown>>(() => asRecord(props.detail?.typed_data));
-const sections = computed<SectionSummary[]>(() =>
-  Array.isArray(props.detail?.sections) ? (props.detail.sections as SectionSummary[]) : [],
-);
 
 const quickStatsQuery = useEntityQuickStatsQuery(entityId, {
   enabled: computed(() => ['character', 'npc'].includes(entityTypeKey.value)),
+  previewAsPlayer: computed(() => props.isPlayerPreview),
 });
 const characterHooksQuery = useCharacterHooksQuery(entityId, {
   enabled: computed(() => entityTypeKey.value === 'character'),
+  previewAsPlayer: computed(() => props.isPlayerPreview),
 });
 const partyMembersQuery = usePartyMembersQuery(entityId, {
   enabled: computed(() => entityTypeKey.value === 'party'),
+  previewAsPlayer: computed(() => props.isPlayerPreview),
 });
 const encounterStatblocksQuery = useEncounterStatblocksQuery(entityId, {
   enabled: computed(() => entityTypeKey.value === 'encounter'),
+  previewAsPlayer: computed(() => props.isPlayerPreview),
 });
 
 const quickStats = computed(() => quickStatsQuery.data.value ?? []);
@@ -112,6 +115,29 @@ const isQuickStatsLoading = computed(() => quickStatsQuery.isPending.value);
 const isCharacterHooksLoading = computed(() => characterHooksQuery.isPending.value);
 const isPartyMembersLoading = computed(() => partyMembersQuery.isPending.value);
 const isEncounterStatblocksLoading = computed(() => encounterStatblocksQuery.isPending.value);
+const activeRoleView = computed(() => props.activeRoleView);
+const isPlayerPreview = computed(() => props.isPlayerPreview);
+const isCharacterController = computed(
+  () =>
+    Boolean(props.detail?.controlling_user_id) &&
+    props.detail?.controlling_user_id === currentUser.value?.id,
+);
+
+function canShowVisibility(visibility?: Visibility) {
+  if (!visibility || !isPlayerPreview.value) {
+    return true;
+  }
+
+  if (visibility === 'shared') {
+    return true;
+  }
+
+  if (visibility === 'character_owner_gm') {
+    return isCharacterController.value;
+  }
+
+  return false;
+}
 
 watch(
   characterHooks,
@@ -271,28 +297,45 @@ function openEntity(id: string | null | undefined) {
   uiStore.selectEntity(id);
 }
 
-const metadata = computed(() => {
-  const items = [
-    props.detail?.status_label,
-    formatDate(props.detail?.relevant_date),
-    props.detail?.location_type_label,
-    props.detail?.encounter_type_label,
-    props.detail?.storyline_type,
-    props.detail?.storyline_priority_label,
-    props.detail?.storyline_category_label,
-    props.detail?.timeline_date_expression,
+const metadata = computed<MetadataItem[]>(() => {
+  const items: Array<MetadataItem | null> = [
+    props.detail?.status_label ? { label: props.detail.status_label } : null,
+    formatDate(props.detail?.relevant_date)
+      ? { label: formatDate(props.detail?.relevant_date) }
+      : null,
+    props.detail?.location_type_label ? { label: props.detail.location_type_label } : null,
+    props.detail?.encounter_type_label ? { label: props.detail.encounter_type_label } : null,
+    props.detail?.storyline_type ? { label: props.detail.storyline_type } : null,
+    props.detail?.storyline_priority_label
+      ? { label: props.detail.storyline_priority_label }
+      : null,
+    props.detail?.storyline_category_label
+      ? { label: props.detail.storyline_category_label }
+      : null,
+    props.detail?.timeline_date_expression
+      ? { label: props.detail.timeline_date_expression }
+      : null,
     props.detail?.controlling_user_display_label
-      ? `Controller: ${props.detail.controlling_user_display_label}`
-      : '',
-    props.detail?.parent_entity_label ? `Parent: ${props.detail.parent_entity_label}` : '',
-    props.detail?.related_session_label ? `Session: ${props.detail.related_session_label}` : '',
+      ? {
+          label: `Controller: ${props.detail.controlling_user_display_label}`,
+          visibility: 'character_owner_gm',
+        }
+      : null,
+    props.detail?.parent_entity_label
+      ? { label: `Parent: ${props.detail.parent_entity_label}` }
+      : null,
+    props.detail?.related_session_label
+      ? { label: `Session: ${props.detail.related_session_label}` }
+      : null,
     props.detail?.related_storyline_label
-      ? `Storyline: ${props.detail.related_storyline_label}`
-      : '',
-    props.detail?.is_major ? 'Major' : '',
+      ? { label: `Storyline: ${props.detail.related_storyline_label}` }
+      : null,
+    props.detail?.is_major ? { label: 'Major' } : null,
   ];
 
-  return items.filter((item): item is string => Boolean(item));
+  return items
+    .filter((item): item is MetadataItem => Boolean(item))
+    .filter((item) => canShowVisibility(item.visibility));
 });
 
 const detailItems = computed<DetailItem[]>(() => {
@@ -375,12 +418,10 @@ const detailItems = computed<DetailItem[]>(() => {
       pushItem(items, 'Danger', stringValue(data.danger_level_label), {
         visibility: 'gm_only',
       });
-      pushItem(
-        items,
-        'Controlling faction',
-        entityRef(data.controlling_faction)?.label ?? null,
-        { visibility: 'gm_only', entityId: entityRef(data.controlling_faction)?.id },
-      );
+      pushItem(items, 'Controlling faction', entityRef(data.controlling_faction)?.label ?? null, {
+        visibility: 'gm_only',
+        entityId: entityRef(data.controlling_faction)?.id,
+      });
       pushItem(items, 'Owner / steward', entityRef(data.owner_or_steward)?.label ?? null, {
         visibility: 'gm_only',
         entityId: entityRef(data.owner_or_steward)?.id,
@@ -440,7 +481,9 @@ const detailBlocks = computed<DetailBlock[]>(() => {
       pushBlock(blocks, 'Public summary', stringValue(data.public_summary));
       pushBlock(blocks, 'GM summary', stringValue(data.gm_summary), { visibility: 'gm_only' });
       pushBlock(blocks, 'Public goal', stringValue(data.public_goal_text));
-      pushBlock(blocks, 'True goal', stringValue(data.gm_true_goal_text), { visibility: 'gm_only' });
+      pushBlock(blocks, 'True goal', stringValue(data.gm_true_goal_text), {
+        visibility: 'gm_only',
+      });
       break;
     case 'location':
       pushBlock(blocks, 'Public summary', stringValue(data.public_summary));
@@ -478,16 +521,38 @@ const detailBlocks = computed<DetailBlock[]>(() => {
 
 const activePalette = computed(() => paletteColor(typedData.value.palette_color));
 const activeSymbol = computed(() => symbolData(typedData.value.symbol));
+const visibleDetailItems = computed(() =>
+  detailItems.value.filter((item) => canShowVisibility(item.visibility)),
+);
+const visibleDetailBlocks = computed(() =>
+  detailBlocks.value.filter((block) => canShowVisibility(block.visibility)),
+);
+const visibleQuickStats = computed(() =>
+  quickStats.value.filter((stat) => canShowVisibility(stat.visibility as Visibility | undefined)),
+);
+const visibleCharacterHooks = computed(() =>
+  characterHooks.value.filter((hook) =>
+    canShowVisibility(hook.visibility as Visibility | undefined),
+  ),
+);
+const visiblePartyMembers = computed(() =>
+  partyMembers.value.filter((member) =>
+    canShowVisibility((member.character_visibility as Visibility | null) ?? undefined),
+  ),
+);
 const canShowQuickStats = computed(
   () =>
     ['character', 'npc'].includes(entityTypeKey.value) &&
-    (isQuickStatsLoading.value || quickStats.value.length > 0),
+    (isQuickStatsLoading.value || visibleQuickStats.value.length > 0),
 );
 const canShowPartyMembers = computed(
-  () => entityTypeKey.value === 'party' && (isPartyMembersLoading.value || partyMembers.value.length > 0),
+  () =>
+    entityTypeKey.value === 'party' &&
+    (isPartyMembersLoading.value || visiblePartyMembers.value.length > 0),
 );
 const canShowEncounterStatblocks = computed(
   () =>
+    !isPlayerPreview.value &&
     entityTypeKey.value === 'encounter' &&
     (isEncounterStatblocksLoading.value || encounterStatblocks.value.length > 0),
 );
@@ -512,9 +577,7 @@ async function handlePromoteHook(hook: CharacterHook) {
 }
 
 function typedEncounterValues(statblock: EncounterStatblock) {
-  return Array.isArray(statblock.values)
-    ? (statblock.values as EncounterStatblockValue[])
-    : [];
+  return Array.isArray(statblock.values) ? (statblock.values as EncounterStatblockValue[]) : [];
 }
 
 function typedEncounterInstances(statblock: EncounterStatblock) {
@@ -549,23 +612,31 @@ function typedEncounterInstances(statblock: EncounterStatblock) {
           </p>
           <h2 class="mt-1 text-xl font-semibold">{{ detail.list_caption }}</h2>
           <div class="mt-2 flex flex-wrap gap-1">
-            <YStatusBadge v-for="item in metadata" :key="item" :label="item" tone="info" />
             <YStatusBadge
-              v-if="detail.npc_real_status_label"
+              v-for="item in metadata"
+              :key="item.label"
+              :label="item.label"
+              tone="info"
+            />
+            <YStatusBadge
+              v-if="detail.npc_real_status_label && !isPlayerPreview"
               :label="`Real: ${detail.npc_real_status_label}`"
               tone="warning"
             />
+            <YStatusBadge v-if="isPlayerPreview" label="Player preview" tone="warning" />
           </div>
         </div>
 
-        <div v-if="detailItems.length" class="grid gap-3 pt-3 md:grid-cols-2 xl:grid-cols-3">
+        <div v-if="visibleDetailItems.length" class="grid gap-3 pt-3 md:grid-cols-2 xl:grid-cols-3">
           <div
-            v-for="item in detailItems"
+            v-for="item in visibleDetailItems"
             :key="`${item.label}-${item.value}`"
             class="min-w-0 rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface-muted)] p-2"
           >
             <div class="flex items-center gap-2">
-              <p class="min-w-0 flex-1 truncate text-xs font-medium uppercase text-[var(--yife-text-muted)]">
+              <p
+                class="min-w-0 flex-1 truncate text-xs font-medium uppercase text-[var(--yife-text-muted)]"
+              >
                 {{ item.label }}
               </p>
               <YVisibilityBadge v-if="item.visibility" :visibility="item.visibility" />
@@ -592,14 +663,16 @@ function typedEncounterInstances(statblock: EncounterStatblock) {
           </div>
         </div>
 
-        <div v-if="detailBlocks.length" class="grid gap-3 pt-3 md:grid-cols-2">
+        <div v-if="visibleDetailBlocks.length" class="grid gap-3 pt-3 md:grid-cols-2">
           <div
-            v-for="block in detailBlocks"
+            v-for="block in visibleDetailBlocks"
             :key="`${block.label}-${block.value}`"
             class="rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface-muted)] p-3"
           >
             <div class="flex items-center gap-2">
-              <p class="min-w-0 flex-1 truncate text-xs font-medium uppercase text-[var(--yife-text-muted)]">
+              <p
+                class="min-w-0 flex-1 truncate text-xs font-medium uppercase text-[var(--yife-text-muted)]"
+              >
                 {{ block.label }}
               </p>
               <YVisibilityBadge v-if="block.visibility" :visibility="block.visibility" />
@@ -622,12 +695,14 @@ function typedEncounterInstances(statblock: EncounterStatblock) {
         />
         <div v-else class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           <div
-            v-for="stat in quickStats"
+            v-for="stat in visibleQuickStats"
             :key="stat.field_id"
             class="rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface-muted)] p-2"
           >
             <div class="flex items-center gap-2">
-              <p class="min-w-0 flex-1 truncate text-xs font-medium uppercase text-[var(--yife-text-muted)]">
+              <p
+                class="min-w-0 flex-1 truncate text-xs font-medium uppercase text-[var(--yife-text-muted)]"
+              >
                 {{ stat.compact_label || stat.label }}
               </p>
               <YVisibilityBadge :visibility="stat.visibility" />
@@ -644,13 +719,13 @@ function typedEncounterInstances(statblock: EncounterStatblock) {
           text="Fetching character hooks."
         />
         <YEmptyState
-          v-else-if="!characterHooks.length"
+          v-else-if="!visibleCharacterHooks.length"
           heading="No hooks"
           text="Character hooks appear here once they are added."
         />
         <div v-else class="space-y-2">
           <article
-            v-for="hook in characterHooks"
+            v-for="hook in visibleCharacterHooks"
             :key="hook.id"
             class="rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface-muted)] p-3"
           >
@@ -721,7 +796,7 @@ function typedEncounterInstances(statblock: EncounterStatblock) {
         />
         <div v-else class="space-y-2">
           <div
-            v-for="member in partyMembers"
+            v-for="member in visiblePartyMembers"
             :key="member.character_entity_id"
             class="flex flex-wrap items-center gap-2 rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface-muted)] p-2"
           >
@@ -732,7 +807,10 @@ function typedEncounterInstances(statblock: EncounterStatblock) {
             >
               {{ member.character_label || member.character_entity_id }}
             </button>
-            <YStatusBadge :label="member.is_active ? 'Active' : 'Inactive'" :tone="member.is_active ? 'success' : 'neutral'" />
+            <YStatusBadge
+              :label="member.is_active ? 'Active' : 'Inactive'"
+              :tone="member.is_active ? 'success' : 'neutral'"
+            />
             <YVisibilityBadge
               v-if="member.character_visibility"
               :visibility="member.character_visibility"
@@ -795,54 +873,111 @@ function typedEncounterInstances(statblock: EncounterStatblock) {
         </div>
       </YPanelSurface>
 
-      <YPanelSurface heading="Sections">
-        <div class="grid gap-2">
-          <section
-            v-for="section in sections"
-            :key="section.id"
-            class="rounded-[4px] border border-[var(--yife-border)] bg-[var(--yife-surface-muted)] p-3"
-          >
-            <div class="flex items-center gap-2">
-              <h3 class="min-w-0 flex-1 truncate text-sm font-semibold">{{ section.label }}</h3>
-              <YVisibilityBadge :visibility="section.visibility" />
-            </div>
-            <p
-              v-if="section.body_preview"
-              class="mt-2 whitespace-pre-wrap text-sm text-[var(--yife-text-muted)]"
-            >
-              {{ section.body_preview }}
-            </p>
-            <p v-else class="mt-2 text-xs text-[var(--yife-text-muted)]">No section content yet.</p>
-          </section>
-        </div>
-      </YPanelSurface>
+      <SessionAttendancePanel
+        v-if="detail && entityTypeKey === 'session'"
+        :campaign-id="detail.campaign_id"
+        :session-entity-id="detail.entity_id"
+        :active-role-view="activeRoleView"
+        :is-player-preview="isPlayerPreview"
+      />
+
+      <EntitySectionsPanel
+        v-if="detail"
+        :campaign-id="detail.campaign_id"
+        :entity-id="detail.entity_id"
+        :can-add-contribution="detail.can_add_contribution"
+        :active-role-view="activeRoleView"
+        :is-player-preview="isPlayerPreview"
+        :is-character-controller="isCharacterController"
+      />
+      <EntityNotesPanel
+        v-if="detail"
+        :campaign-id="detail.campaign_id"
+        :entity-id="detail.entity_id"
+        :can-add-note="detail.can_add_note"
+        :active-role-view="activeRoleView"
+        :is-player-preview="isPlayerPreview"
+        :is-character-controller="isCharacterController"
+      />
     </div>
 
-    <YPanelSurface heading="Context" muted>
-      <div class="space-y-3 text-sm text-[var(--yife-text-muted)]">
-        <div class="flex items-center gap-2">
-          <Link2 class="size-4" aria-hidden="true" />
-          Dense typed metadata now sits above longer section content.
-        </div>
+    <div :class="props.showInlineContext ? 'space-y-3' : 'space-y-3 xl:hidden'">
+      <EntityRelationshipsPanel
+        v-if="detail"
+        :campaign-id="detail.campaign_id"
+        :entity-id="detail.entity_id"
+        :can-manage="detail.can_manage_visibility"
+        :active-role-view="activeRoleView"
+        :is-player-preview="isPlayerPreview"
+        :is-character-controller="isCharacterController"
+      />
+      <EntityRelatedRecordsPanel
+        v-if="detail"
+        :entity-id="detail.entity_id"
+        :active-role-view="activeRoleView"
+        :is-player-preview="isPlayerPreview"
+        :is-character-controller="isCharacterController"
+      />
+      <YPanelSurface heading="Context" muted>
+        <div class="space-y-3 text-sm text-[var(--yife-text-muted)]">
+          <div v-if="activePalette" class="rounded-[4px] border border-[var(--yife-border)] p-2">
+            <p class="text-xs font-medium uppercase text-[var(--yife-text-muted)]">Palette</p>
+            <span
+              class="mt-2 inline-flex items-center rounded-[4px] px-2 py-1 text-xs font-medium"
+              :style="getPaletteTokenStyle(activePalette.color_token)"
+            >
+              {{ activePalette.label }}
+            </span>
+          </div>
 
-        <div v-if="activePalette" class="rounded-[4px] border border-[var(--yife-border)] p-2">
-          <p class="text-xs font-medium uppercase text-[var(--yife-text-muted)]">Palette</p>
-          <span
-            class="mt-2 inline-flex items-center rounded-[4px] px-2 py-1 text-xs font-medium"
-            :style="getPaletteTokenStyle(activePalette.color_token)"
-          >
-            {{ activePalette.label }}
-          </span>
-        </div>
+          <div v-if="activeSymbol" class="rounded-[4px] border border-[var(--yife-border)] p-2">
+            <p class="text-xs font-medium uppercase text-[var(--yife-text-muted)]">Symbol</p>
+            <p class="mt-2 text-sm font-medium">{{ activeSymbol.label }}</p>
+            <p class="text-xs">{{ activeSymbol.icon_key }}</p>
+          </div>
 
-        <div v-if="activeSymbol" class="rounded-[4px] border border-[var(--yife-border)] p-2">
-          <p class="text-xs font-medium uppercase text-[var(--yife-text-muted)]">Symbol</p>
-          <p class="mt-2 text-sm font-medium">{{ activeSymbol.label }}</p>
-          <p class="text-xs">{{ activeSymbol.icon_key }}</p>
+          <YStatusBadge :label="`Updated ${formatDateTime(detail.updated_at)}`" tone="info" />
+          <YStatusBadge v-if="detail.can_edit_core" label="Can edit core" tone="success" />
+          <YStatusBadge
+            v-if="detail.can_manage_visibility && !isPlayerPreview"
+            label="Can manage visibility"
+            tone="info"
+          />
+          <YStatusBadge
+            v-if="detail.can_delete && !isPlayerPreview"
+            label="Can delete"
+            tone="warning"
+          />
         </div>
+      </YPanelSurface>
 
-        <YStatusBadge :label="`Updated ${formatDateTime(detail.updated_at)}`" tone="info" />
-      </div>
-    </YPanelSurface>
+      <EntityBacklinksPanel
+        v-if="detail"
+        :entity-id="detail.entity_id"
+        :active-role-view="activeRoleView"
+        :is-player-preview="isPlayerPreview"
+        :is-character-controller="isCharacterController"
+      />
+      <CampaignActivityPanel
+        v-if="detail"
+        :campaign-id="detail.campaign_id"
+        :related-entity-id="detail.entity_id"
+        heading="Recent Context"
+        :limit="6"
+        :active-role-view="activeRoleView"
+        :is-player-preview="isPlayerPreview"
+      />
+      <TimelineEventListPanel
+        v-if="detail"
+        :campaign-id="detail.campaign_id"
+        :related-entity-id="detail.entity_id"
+        heading="Timeline Context"
+        compact
+        :show-filters="false"
+        :active-role-view="activeRoleView"
+        :is-player-preview="isPlayerPreview"
+        @open="openEntity"
+      />
+    </div>
   </div>
 </template>
